@@ -54,6 +54,17 @@ jobs:
           git add ci/android-build-last.log
           git commit -m "CI: save latest Android build failure log" || exit 0
           git push
+      - name: Record successful build
+        if: success()
+        shell: bash
+        run: |
+          mkdir -p ci
+          printf '{\n  "status": "success",\n  "sourceCommit": "%s",\n  "workflowRun": "%s",\n  "builtAtUtc": "%s"\n}\n' "$GITHUB_SHA" "$GITHUB_RUN_ID" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > ci/android-build-status.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ci/android-build-status.json
+          git commit -m "CI: record successful Android build" || exit 0
+          git push
       - name: Upload installable APK
         if: success()
         uses: actions/upload-artifact@v4
