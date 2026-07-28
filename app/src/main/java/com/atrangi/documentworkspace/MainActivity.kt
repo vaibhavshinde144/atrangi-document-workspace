@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.webkit.DownloadListener
@@ -27,28 +28,49 @@ class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
     private var pendingPermissionRequest: PermissionRequest? = null
+    private var pendingAppliedWebVersion: String? = null
 
-    private val filePicker = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+    private val filePicker = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
         val callback = fileChooserCallback ?: return@registerForActivityResult
-        callback.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(result.resultCode, result.data))
+        val uris = WebChromeClient.FileChooserParams.parseResult(result.resultCode, result.data)
+        callback.onReceiveValue(uris)
         fileChooserCallback = null
     }
 
-    private val cameraPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+    private val cameraPermission = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
         val request = pendingPermissionRequest
         if (granted && request != null) request.grant(request.resources) else request?.deny()
         pendingPermissionRequest = null
     }
 
+    private val notificationPermission = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         webView = WebView(this)
         setContentView(webView)
         configureWebView()
 
+        UpdateManager.createNotificationChannel(this)
+        UpdateManager.schedule(this)
+        UpdateManager.checkNow(this)
+        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+
         if (savedInstanceState == null) {
-            webView.clearCache(true)
-            webView.loadUrl(APP_URL)
+            applyLaunchIntent(intent)
         } else {
             webView.restoreState(savedInstanceState)
         }
@@ -77,8 +99,8 @@ class MainActivity : AppCompatActivity() {
             mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
             setSupportMultipleWindows(false)
         }
+
         webView.setInitialScale(0)
-        webView.isVerticalScrollBarEnabled = true
         webView.isHorizontalScrollBarEnabled = false
 
         webView.webViewClient = object : WebViewClient() {
@@ -89,6 +111,14 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     startActivity(Intent(Intent.ACTION_VIEW, uri))
                     true
+                }
+            }
+
+            override fun onPageFinished(view: WebView, url: String) {
+                super.onPageFinished(view, url)
+                pendingAppliedWebVersion?.let { version ->
+                    UpdateManager.markWebVersionApplied(this@MainActivity, version)
+                    pendingAppliedWebVersion = null
                 }
             }
         }
@@ -144,19 +174,39 @@ class MainActivity : AppCompatActivity() {
 
         webView.setDownloadListener(DownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
             try {
-                val filename = android.webkit.URLUtil.guessFileName(url, contentDisposition, mimeType)
                 val request = DownloadManager.Request(Uri.parse(url))
                     .setMimeType(mimeType)
                     .addRequestHeader("User-Agent", userAgent)
-                    .setTitle(filename)
+                    .setTitle(android.webkit.URLUtil.guessFileName(url, contentDisposition, mimeType))
                     .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                    .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename)
+                    .setDestinationInExternalPublicDir(
+                        Environment.DIRECTORY_DOWNLOADS,
+                        android.webkit.URLUtil.guessFileName(url, contentDisposition, mimeType)
+                    )
                 (getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
                 Toast.makeText(this, "Download started", Toast.LENGTH_SHORT).show()
             } catch (error: Exception) {
                 Toast.makeText(this, "Unable to download: ${error.message}", Toast.LENGTH_LONG).show()
             }
         })
+    }
+
+    private fun applyLaunchIntent(source: Intent?) {
+        val shouldApply = source?.getBooleanExtra(UpdateManager.EXTRA_APPLY_WEB_UPDATE, false) == true
+        val version = source?.getStringExtra(UpdateManager.EXTRA_WEB_VERSION)
+            ?: UpdateManager.appliedWebVersion(this)
+        if (shouldApply) {
+            pendingAppliedWebVersion = version
+            webView.clearCache(true)
+        }
+        val cacheBust = if (shouldApply) "&wv=${Uri.encode(version)}&update=${System.currentTimeMillis()}" else ""
+        webView.loadUrl(APP_URL + cacheBust)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        applyLaunchIntent(intent)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -166,6 +216,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         fileChooserCallback?.onReceiveValue(null)
+        fileChooserCallback = null
         pendingPermissionRequest?.deny()
         pendingPermissionRequest = null
         webView.destroy()
@@ -173,7 +224,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
-        private const val APP_URL = "https://vaibhavshinde144.github.io/atrangi-document-workspace/?app=7.1.1"
+        private const val APP_URL = "https://vaibhavshinde144.github.io/atrangi-document-workspace/?app=7.1.2"
         private const val APP_HOST = "vaibhavshinde144.github.io"
     }
 }
