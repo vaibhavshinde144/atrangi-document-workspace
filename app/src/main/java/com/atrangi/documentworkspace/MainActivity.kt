@@ -22,25 +22,19 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.webkit.WebViewAssetLoader
 
 class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
     private var pendingPermissionRequest: PermissionRequest? = null
 
-    private val filePicker = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
+    private val filePicker = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val callback = fileChooserCallback ?: return@registerForActivityResult
-        val uris = WebChromeClient.FileChooserParams.parseResult(result.resultCode, result.data)
-        callback.onReceiveValue(uris)
+        callback.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(result.resultCode, result.data))
         fileChooserCallback = null
     }
 
-    private val cameraPermission = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
+    private val cameraPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         val request = pendingPermissionRequest
         if (granted && request != null) request.grant(request.resources) else request?.deny()
         pendingPermissionRequest = null
@@ -48,17 +42,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         webView = WebView(this)
         setContentView(webView)
         configureWebView()
-
-        if (savedInstanceState == null) {
-            webView.loadUrl(APP_URL)
-        } else {
-            webView.restoreState(savedInstanceState)
-        }
-
+        if (savedInstanceState == null) webView.loadUrl(APP_URL) else webView.restoreState(savedInstanceState)
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (webView.canGoBack()) webView.goBack() else finish()
@@ -67,10 +54,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun configureWebView() {
-        val loader = WebViewAssetLoader.Builder()
-            .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
-            .build()
-
         with(webView.settings) {
             javaScriptEnabled = true
             domStorageEnabled = true
@@ -88,12 +71,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         webView.webViewClient = object : WebViewClient() {
-            override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest) =
-                loader.shouldInterceptRequest(request.url)
-
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val uri = request.url
-                return if (uri.host == "appassets.androidplatform.net") {
+                return if (uri.host == APP_HOST) {
                     false
                 } else {
                     startActivity(Intent(Intent.ACTION_VIEW, uri))
@@ -130,11 +110,7 @@ class MainActivity : AppCompatActivity() {
             override fun onPermissionRequest(request: PermissionRequest) {
                 runOnUiThread {
                     val needsCamera = request.resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE)
-                    if (!needsCamera || ContextCompat.checkSelfPermission(
-                            this@MainActivity,
-                            Manifest.permission.CAMERA
-                        ) == PackageManager.PERMISSION_GRANTED
-                    ) {
+                    if (!needsCamera || ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
                         request.grant(request.resources)
                     } else {
                         pendingPermissionRequest = request
@@ -143,25 +119,20 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            override fun onGeolocationPermissionsShowPrompt(
-                origin: String?,
-                callback: GeolocationPermissions.Callback?
-            ) {
+            override fun onGeolocationPermissionsShowPrompt(origin: String?, callback: GeolocationPermissions.Callback?) {
                 callback?.invoke(origin, false, false)
             }
         }
 
         webView.setDownloadListener(DownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
             try {
+                val filename = android.webkit.URLUtil.guessFileName(url, contentDisposition, mimeType)
                 val request = DownloadManager.Request(Uri.parse(url))
                     .setMimeType(mimeType)
                     .addRequestHeader("User-Agent", userAgent)
-                    .setTitle(android.webkit.URLUtil.guessFileName(url, contentDisposition, mimeType))
+                    .setTitle(filename)
                     .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                    .setDestinationInExternalPublicDir(
-                        Environment.DIRECTORY_DOWNLOADS,
-                        android.webkit.URLUtil.guessFileName(url, contentDisposition, mimeType)
-                    )
+                    .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename)
                 (getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
                 Toast.makeText(this, "Download started", Toast.LENGTH_SHORT).show()
             } catch (error: Exception) {
@@ -177,12 +148,12 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         fileChooserCallback?.onReceiveValue(null)
-        fileChooserCallback = null
         webView.destroy()
         super.onDestroy()
     }
 
     companion object {
-        private const val APP_URL = "https://appassets.androidplatform.net/assets/www/index.html"
+        private const val APP_URL = "https://vaibhavshinde144.github.io/atrangi-document-workspace/"
+        private const val APP_HOST = "vaibhavshinde144.github.io"
     }
 }
