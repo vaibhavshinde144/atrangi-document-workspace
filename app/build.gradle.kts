@@ -15,6 +15,10 @@ android {
         versionName = "7.1.2"
     }
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
