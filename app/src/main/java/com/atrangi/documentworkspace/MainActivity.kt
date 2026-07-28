@@ -45,7 +45,14 @@ class MainActivity : AppCompatActivity() {
         webView = WebView(this)
         setContentView(webView)
         configureWebView()
-        if (savedInstanceState == null) webView.loadUrl(APP_URL) else webView.restoreState(savedInstanceState)
+
+        if (savedInstanceState == null) {
+            webView.clearCache(true)
+            webView.loadUrl(APP_URL)
+        } else {
+            webView.restoreState(savedInstanceState)
+        }
+
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (webView.canGoBack()) webView.goBack() else finish()
@@ -65,10 +72,14 @@ class MainActivity : AppCompatActivity() {
             displayZoomControls = false
             loadWithOverviewMode = true
             useWideViewPort = true
-            cacheMode = WebSettings.LOAD_DEFAULT
+            textZoom = 100
+            cacheMode = WebSettings.LOAD_NO_CACHE
             mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
             setSupportMultipleWindows(false)
         }
+        webView.setInitialScale(0)
+        webView.isVerticalScrollBarEnabled = true
+        webView.isHorizontalScrollBarEnabled = false
 
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
@@ -110,7 +121,11 @@ class MainActivity : AppCompatActivity() {
             override fun onPermissionRequest(request: PermissionRequest) {
                 runOnUiThread {
                     val needsCamera = request.resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE)
-                    if (!needsCamera || ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                    if (!needsCamera || ContextCompat.checkSelfPermission(
+                            this@MainActivity,
+                            Manifest.permission.CAMERA
+                        ) == PackageManager.PERMISSION_GRANTED
+                    ) {
                         request.grant(request.resources)
                     } else {
                         pendingPermissionRequest = request
@@ -119,7 +134,10 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            override fun onGeolocationPermissionsShowPrompt(origin: String?, callback: GeolocationPermissions.Callback?) {
+            override fun onGeolocationPermissionsShowPrompt(
+                origin: String?,
+                callback: GeolocationPermissions.Callback?
+            ) {
                 callback?.invoke(origin, false, false)
             }
         }
@@ -148,12 +166,14 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         fileChooserCallback?.onReceiveValue(null)
+        pendingPermissionRequest?.deny()
+        pendingPermissionRequest = null
         webView.destroy()
         super.onDestroy()
     }
 
     companion object {
-        private const val APP_URL = "https://vaibhavshinde144.github.io/atrangi-document-workspace/"
+        private const val APP_URL = "https://vaibhavshinde144.github.io/atrangi-document-workspace/?app=7.1.1"
         private const val APP_HOST = "vaibhavshinde144.github.io"
     }
 }
