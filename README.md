@@ -1,4 +1,4 @@
-# Atrangi Document Workspace v7.1.2
+# Atrangi Document Workspace
 
 All-in-one document workspace for Android and web: scanning, passport/ID photos, OCR, PDF tools, document viewing/editing, conversion, file management and one-tap workspace updates.
 
@@ -6,6 +6,11 @@ All-in-one document workspace for Android and web: scanning, passport/ID photos,
 The production web app is published from `docs/` with GitHub Pages.
 
 Website: `https://vaibhavshinde144.github.io/atrangi-document-workspace/`
+
+## Current releases
+
+- Hosted workspace: `7.1.3`
+- Android wrapper: `7.1.2` (`versionCode 3`)
 
 ## Android
 - Package: `com.atrangi.documentworkspace`
