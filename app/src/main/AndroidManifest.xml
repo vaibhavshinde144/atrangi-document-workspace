@@ -5,6 +5,7 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-feature android:name="android.hardware.camera.any" android:required="false" />
 
     <application
@@ -15,6 +16,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AtrangiDocumentWorkspace"
         android:usesCleartextTraffic="false">
+
+        <activity
+            android:name=".UpdateActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AtrangiDocumentWorkspace" />
 
         <activity
             android:name=".MainActivity"
