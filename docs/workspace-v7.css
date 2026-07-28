@@ -10,3 +10,146 @@
 
 /* Keep the Android/WebView header on one row at phone widths. */
 @media(max-width:620px){.brand-block{flex-wrap:nowrap}.brand-block>div:nth-child(2){min-width:0;flex:1}.brand-block h1{max-width:100%}.top-actions{flex:0 0 auto}}
+
+/* v7.1.4 professional responsive layout */
+:where(button,input,select,textarea):focus-visible{outline:3px solid rgba(8,166,223,.28);outline-offset:2px}
+
+@media (min-width:1101px){
+  .quick-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .tool-grid{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+}
+
+@media (min-width:721px) and (max-width:1100px){
+  .main-content{width:min(100% - 40px,1040px);padding-top:20px}
+  .quick-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .tool-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .v71-feature-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .welcome-card{padding:26px}
+}
+
+@media (min-width:721px) and (max-width:900px){
+  .app-shell{padding-bottom:calc(86px + var(--safe-bottom))}
+  .desktop-nav{display:none}
+  .mobile-nav{position:fixed;left:50%;right:auto;bottom:0;width:min(560px,calc(100% - 32px));height:calc(68px + var(--safe-bottom));padding:0 8px var(--safe-bottom);transform:translateX(-50%);display:grid;grid-template-columns:1fr 1fr 68px 1fr 1fr;align-items:center;background:rgba(255,255,255,.97);border:1px solid var(--line);border-bottom:0;border-radius:18px 18px 0 0;box-shadow:0 -8px 28px rgba(16,58,76,.12);z-index:65;backdrop-filter:blur(12px)}
+  .mobile-nav button{height:58px;min-width:0;border:0;border-radius:11px;background:transparent;color:#657b84;display:grid;place-items:center;align-content:center;gap:3px}
+  .mobile-nav button span{font-size:18px;line-height:1}
+  .mobile-nav button small{font-size:9px;line-height:1.1}
+  .mobile-nav button.active{color:#087fa9;background:#eff9fc}
+  .fab-cluster{right:50%;bottom:calc(10px + var(--safe-bottom));transform:translateX(50%);z-index:70}
+  .add-fab{display:none}
+  .camera-fab{width:54px;height:54px;border-radius:50%;border:3px solid #fff;font-size:21px;box-shadow:0 7px 18px rgba(4,78,108,.25)}
+  .toast{bottom:calc(80px + var(--safe-bottom))}
+}
+
+@media (max-width:720px){
+  html,body{max-width:100%;overflow-x:clip}
+  body{background:#f3f7f8}
+  .app-shell{padding-bottom:calc(76px + var(--safe-bottom))}
+
+  .topbar{height:56px;min-height:56px;padding:0 8px;gap:6px;box-shadow:0 3px 12px rgba(7,36,49,.16)}
+  .topbar>.icon-button{flex:0 0 40px}
+  .topbar .icon-button{width:40px;height:40px;border-radius:12px;font-size:19px}
+  .brand-block{gap:8px}
+  .brand-logo{flex:0 0 34px;width:34px;height:34px;border-radius:10px}
+  .brand-logo span{font-size:18px}
+  .brand-block h1{font-size:14px;letter-spacing:-.15px}
+  .top-actions{gap:0}
+  .top-actions>.icon-button:first-child{display:none}
+
+  .main-content{width:calc(100% - 24px);padding:12px 0 24px}
+  .panel-heading{margin-bottom:14px}
+  .panel-heading .eyebrow{font-size:10px;letter-spacing:1.25px}
+  .panel-heading h2{font-size:clamp(27px,7.4vw,34px);line-height:1.08;letter-spacing:-.9px;margin:6px 0 7px}
+  .panel-heading p{font-size:13px;line-height:1.5}
+
+  .welcome-card.v71-hero{grid-template-columns:minmax(0,1fr);gap:12px;padding:18px;border-radius:20px;min-height:0;box-shadow:0 14px 34px rgba(19,56,70,.13)}
+  .welcome-card:after{width:245px;height:245px;right:-95px;top:-105px}
+  .hero-badge-row{gap:6px}
+  .hero-new-badge{font-size:9px;padding:4px 7px}
+  .welcome-copy h2{font-size:clamp(28px,7.6vw,33px);line-height:1.03;letter-spacing:-1.05px;margin:9px 0}
+  .welcome-copy p{font-size:11.5px;line-height:1.45}
+  .welcome-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+  .welcome-actions button{width:100%;min-height:44px;padding:9px 11px;border-radius:12px;white-space:normal;line-height:1.2}
+  .welcome-actions .hero-workspace-btn{grid-column:1/-1}
+  .v71-capability-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+  .v71-capability-grid>div{min-width:0;min-height:52px;padding:8px;border-radius:12px;display:grid;align-content:center}
+  .v71-capability-grid b{font-size:10px;line-height:1.22}
+  .v71-capability-grid span{font-size:8px;line-height:1.3;margin-top:3px}
+
+  .quick-section,.home-section{margin-top:20px}
+  .section-heading{align-items:center;margin:0 2px 11px;gap:10px}
+  .section-heading h3{font-size:20px;line-height:1.2;margin-top:3px}
+  .section-heading .text-btn{white-space:nowrap}
+  .quick-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .quick-card{min-width:0;min-height:104px;padding:13px;border-radius:16px;box-shadow:0 6px 18px rgba(32,69,81,.045)}
+  .quick-card i{width:38px;height:38px;border-radius:12px;margin-bottom:9px;font-size:17px}
+  .quick-card b{font-size:11.5px;line-height:1.25}
+  .quick-card small{font-size:9px;line-height:1.35;margin-top:4px}
+
+  .v71-whats-new{padding:14px;border-radius:18px!important}
+  .v71-feature-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .v71-feature-grid button{min-width:0;min-height:96px;padding:11px;border-radius:13px}
+  .v71-feature-grid i{width:34px;height:34px;border-radius:10px}
+  .v71-feature-grid b{font-size:10.5px;line-height:1.25;margin-top:7px}
+  .v71-feature-grid small{font-size:8px;line-height:1.35}
+
+  .search-field{height:46px;margin-bottom:14px;border-radius:13px;padding:0 13px}
+  .search-field input{min-width:0;font-size:13px}
+  .tool-groups{gap:12px}
+  .tool-group-card{padding:14px;border-radius:18px}
+  .tool-group-title{gap:10px;margin-bottom:10px}
+  .tool-group-title h3{font-size:17px;line-height:1.2}
+  .tool-group-title span{font-size:9.5px;text-align:right}
+  .tool-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .tool-card-button{min-width:0;min-height:88px;padding:11px;border-radius:13px}
+  .tool-card-button .tool-icon{width:34px;height:34px;margin-bottom:7px}
+  .tool-card-button b{font-size:11.5px;line-height:1.25}
+  .tool-card-button small{font-size:9px;line-height:1.3}
+  .tool-card-button:last-child:nth-child(odd){grid-column:1/-1;min-height:72px;display:grid;grid-template-columns:38px minmax(0,1fr);grid-template-rows:auto auto;align-content:center;column-gap:10px}
+  .tool-card-button:last-child:nth-child(odd) .tool-icon{grid-row:1/3;margin:0;align-self:center}
+  .tool-card-button:last-child:nth-child(odd) b,.tool-card-button:last-child:nth-child(odd) small{grid-column:2;margin-top:0}
+
+  .workspace-card,.settings-card{border-radius:18px}
+  .workspace-card{padding:15px}
+  .form-grid,.tool-form{grid-template-columns:1fr}
+  .id-size-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+  .mobile-nav{height:calc(64px + var(--safe-bottom));grid-template-columns:1fr 1fr 64px 1fr 1fr;padding:0 4px var(--safe-bottom);box-shadow:0 -8px 24px rgba(16,58,76,.1);border-top-color:#d4e0e4}
+  .mobile-nav button{height:58px;min-width:0;border-radius:10px;color:#657b84}
+  .mobile-nav button span{font-size:17px;line-height:1}
+  .mobile-nav button small{font-size:9px;line-height:1.1}
+  .mobile-nav button.active{color:#087fa9;background:#eff9fc}
+  .fab-cluster{bottom:calc(10px + var(--safe-bottom))}
+  .camera-fab{width:52px;height:52px;border:3px solid #fff;font-size:20px;box-shadow:0 7px 18px rgba(4,78,108,.25)}
+  .toast{bottom:calc(76px + var(--safe-bottom))}
+}
+
+@media (min-width:480px) and (max-width:720px){
+  .welcome-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .welcome-actions .hero-workspace-btn{grid-column:auto}
+  .v71-capability-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .quick-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+
+@media (max-width:479px){
+  .top-actions>.icon-button:nth-child(2){display:none}
+  .v71-capability-grid>div{min-height:48px}
+  .v71-capability-grid span{display:none}
+}
+
+@media (max-width:359px){
+  .main-content{width:calc(100% - 18px)}
+  .welcome-card.v71-hero{padding:17px}
+  .welcome-copy h2{font-size:27px}
+  .welcome-actions{grid-template-columns:1fr}
+  .welcome-actions .hero-workspace-btn{grid-column:auto}
+  .section-heading h3{font-size:18px}
+}
+
+@media (pointer:coarse){
+  button,.chip,input,select{min-height:44px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  *,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}

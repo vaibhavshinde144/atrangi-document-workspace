@@ -1,4 +1,4 @@
-const CACHE='atrangi-document-workspace-v7.1.3';
+const CACHE='atrangi-document-workspace-v7.1.4';
 const ASSETS=['./','index.html','version.json','app-00.txt','app-01.txt','app-02.txt','app-03.txt','app-04.txt','app-05.txt','app-06.txt','styles.css','research.css','v6.css','v6-core.js','v6.js','passport-core.js','workspace-core-v7.js','passport-v65.js','workspace-v7.js','passport-v65.css','workspace-v7.css','core.js','intelligence-core.js','lib-loader.js','storage.js','tools.js','app.js','research.js','manifest.webmanifest'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));

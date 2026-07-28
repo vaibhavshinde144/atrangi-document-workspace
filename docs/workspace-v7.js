@@ -76,6 +76,8 @@ function applyV71Branding(){
 function bindV71Discoverability(){
  document.getElementById('heroWorkspaceBtn')?.addEventListener('click',()=>App.switchTab('files'));
  document.getElementById('v71OpenWorkspaceBtn')?.addEventListener('click',()=>App.switchTab('files'));
+ const heroImport=document.getElementById('heroImportBtn');
+ if(heroImport)heroImport.onclick=()=>{App.switchTab('files');document.getElementById('universalImportInput')?.click()};
  document.querySelectorAll('[data-v71-go]').forEach(b=>b.addEventListener('click',()=>App.switchTab(b.dataset.v71Go)));
  try{const key='atrangi_v71_home_seen'; if(!localStorage.getItem(key)){setTimeout(()=>App.switchTab('home'),80); localStorage.setItem(key,'1')}}catch{}
 }
