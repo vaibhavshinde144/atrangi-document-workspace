@@ -1,8 +1,8 @@
 {
-  "webVersion": "7.1.2",
+  "webVersion": "7.1.3",
   "nativeVersionCode": 3,
   "nativeVersionName": "7.1.2",
   "mandatory": false,
-  "title": "Atrangi Document Workspace v7.1.2",
-  "notes": "Automatic update engine: direct notification, one-tap workspace update, automatic reload/restart, improved Android WebView cache refresh."
+  "title": "Atrangi Document Workspace v7.1.3",
+  "notes": "Restores the complete CSS and JavaScript web bundle so the Android interface and document tools load correctly."
 }
