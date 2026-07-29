@@ -1,0 +1,50 @@
+/* Atrangi Document Workspace v7.1.8 — branding, mobile header and persistent light/dark theme */
+.atrangi-home-link{cursor:pointer;outline-offset:3px}.atrangi-home-link:focus-visible{outline:3px solid rgba(70,204,239,.78)}
+.brand-logo.atrangi-logo-live{padding:0!important;overflow:hidden!important;background:#050607!important;border-radius:50%!important;border:1px solid rgba(232,202,124,.6)!important;box-shadow:0 5px 16px rgba(0,0,0,.18)!important}
+.atrangi-brand-image{display:block!important;width:100%!important;height:100%!important;object-fit:contain!important;border-radius:50%!important}
+.theme-toggle-btn{display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:5px!important;width:auto!important;min-width:72px!important;height:40px!important;padding:0 9px!important;flex:0 0 auto!important;white-space:nowrap!important}
+.theme-toggle-icon{font-size:16px;line-height:1}.theme-toggle-label{font-size:10px;font-weight:850;line-height:1}
+.top-actions>#themeToggleBtn{display:inline-flex!important}
+
+html[data-theme="dark"]{color-scheme:dark;--bg:#07151c;--surface:#0d2029;--surface-soft:#102934;--line:#274651;--ink:#edf8fb;--muted:#9db1b8;--accent:#21b8df}
+html[data-theme="dark"],html[data-theme="dark"] body{background:#07151c!important;color:#edf8fb!important}
+html[data-theme="dark"] .app-shell,html[data-theme="dark"] .main-content,html[data-theme="dark"] .panel{background:#07151c!important;color:#edf8fb!important}
+html[data-theme="dark"] .topbar,html[data-theme="dark"] .desktop-nav,html[data-theme="dark"] .mobile-nav{background:#0a1d26!important;color:#e7f4f7!important;border-color:#274651!important}
+html[data-theme="dark"] .desktop-nav button,html[data-theme="dark"] .mobile-nav button{color:#a9c0c7!important}
+html[data-theme="dark"] .desktop-nav button.active,html[data-theme="dark"] .mobile-nav button.active{background:#123845!important;color:#59d1ef!important}
+html[data-theme="dark"] .welcome-card,html[data-theme="dark"] .workspace-card,html[data-theme="dark"] .settings-card,html[data-theme="dark"] .quick-card,html[data-theme="dark"] .tool-group-card,html[data-theme="dark"] .tool-card-button,html[data-theme="dark"] .v71-whats-new,html[data-theme="dark"] .v71-feature-grid button,html[data-theme="dark"] .pre-scan-card,html[data-theme="dark"] .v5-source-card,html[data-theme="dark"] .v5-result-card,html[data-theme="dark"] .v6-card,html[data-theme="dark"] .dress-card{background:#0d2029!important;border-color:#274651!important;color:#edf8fb!important;box-shadow:none!important}
+html[data-theme="dark"] h1,html[data-theme="dark"] h2,html[data-theme="dark"] h3,html[data-theme="dark"] h4,html[data-theme="dark"] h5,html[data-theme="dark"] h6,html[data-theme="dark"] b,html[data-theme="dark"] strong,html[data-theme="dark"] label{color:#edf8fb!important}
+html[data-theme="dark"] p,html[data-theme="dark"] small,html[data-theme="dark"] .panel-heading p,html[data-theme="dark"] .quick-card small,html[data-theme="dark"] .tool-card-button small,html[data-theme="dark"] .studio-note{color:#9db1b8!important}
+html[data-theme="dark"] input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),html[data-theme="dark"] select,html[data-theme="dark"] textarea{background:#091a22!important;color:#edf8fb!important;border-color:#31515d!important;caret-color:#65d8f3!important}
+html[data-theme="dark"] input::placeholder,html[data-theme="dark"] textarea::placeholder{color:#718991!important}
+html[data-theme="dark"] .search-field,html[data-theme="dark"] .tool-progress,html[data-theme="dark"] .drop-zone-btn{background:#0b1d25!important;border-color:#31515d!important;color:#dceef3!important}
+html[data-theme="dark"] .secondary-btn,html[data-theme="dark"] .text-btn,html[data-theme="dark"] .action-row button:not(.primary-btn),html[data-theme="dark"] .v5-action-strip button{background:#102934!important;color:#e6f4f7!important;border-color:#31515d!important}
+html[data-theme="dark"] dialog,html[data-theme="dark"] .sheet-card,html[data-theme="dark"] .dialog-card,html[data-theme="dark"] .nav-drawer,html[data-theme="dark"] .drawer{background:#0a1b23!important;color:#edf8fb!important;border-color:#274651!important}
+html[data-theme="dark"] dialog::backdrop{background:rgba(0,0,0,.72)!important}
+html[data-theme="dark"] .drawer-section,html[data-theme="dark"] .drawer-section button{border-color:#274651!important;color:#ddecf1!important}
+html[data-theme="dark"] .universal-hero,html[data-theme="dark"] .universal-drop,html[data-theme="dark"] .universal-stats>div,html[data-theme="dark"] .universal-file-card,html[data-theme="dark"] .universal-file-main,html[data-theme="dark"] .universal-star,html[data-theme="dark"] .universal-more{background:#0d2029!important;border-color:#274651!important;color:#edf8fb!important}
+html[data-theme="dark"] .universal-toolbar input,html[data-theme="dark"] .universal-toolbar select{background:#0a1b23!important;color:#edf8fb!important;border-color:#31515d!important}
+html[data-theme="dark"] .uv-shell,html[data-theme="dark"] .uv-left,html[data-theme="dark"] .uv-right,html[data-theme="dark"] .uv-bottom{background:#0b1d25!important;color:#edf8fb!important;border-color:#274651!important}
+html[data-theme="dark"] .uv-centre{background:#061219!important}
+html[data-theme="dark"] .uv-right-tabs,html[data-theme="dark"] .uv-outline button,html[data-theme="dark"] .uv-inline-actions button,html[data-theme="dark"] .uv-sheet-tabs button,html[data-theme="dark"] .uv-text-head{border-color:#274651!important;background:#102934!important;color:#e4f1f5!important}
+html[data-theme="dark"] .uv-document-render,html[data-theme="dark"] .uv-slide-card,html[data-theme="dark"] .uv-ebook-section,html[data-theme="dark"] .uv-email,html[data-theme="dark"] .universal-fallback,html[data-theme="dark"] .uv-media,html[data-theme="dark"] .uv-sheet-wrap,html[data-theme="dark"] .uv-image-stage{background:#f4f2eb!important;color:#172126!important}
+html[data-theme="dark"] .uv-text-editor{background:#091a22!important;color:#eaf5f8!important}
+html[data-theme="dark"] .version-chip{background:#133846!important;color:#65d8f3!important;border-color:#285361!important}
+html[data-theme="dark"] .toast{background:#132a34!important;color:#f3fbfd!important;border-color:#31515d!important}
+
+@media(max-width:720px){
+  .brand-logo.atrangi-logo-live{width:38px!important;height:38px!important;flex:0 0 38px!important;border-radius:50%!important}
+  .brand-block{min-width:0!important;flex:1 1 auto!important;gap:7px!important}
+  .brand-block>div:nth-child(2){min-width:0!important;flex:1 1 auto!important}
+  .brand-block h1{font-size:14px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+  .brand-block small,.topbar .version-chip{display:none!important}
+  .top-actions{gap:2px!important;flex:0 0 auto!important}
+  .theme-toggle-btn{min-width:40px!important;width:40px!important;padding:0!important}
+  .theme-toggle-label{display:none!important}
+  .topbar{padding-top:env(safe-area-inset-top,0px)!important;box-sizing:content-box!important}
+}
+@media(max-width:479px){
+  #privacyBtn,#searchBtn{display:none!important}
+  #themeToggleBtn,#moreBtn{display:inline-flex!important}
+}
+@media(prefers-reduced-motion:reduce){.atrangi-home-link,.theme-toggle-btn{transition:none!important}}
