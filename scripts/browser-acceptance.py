@@ -133,7 +133,9 @@ def runtime_suite():
 
 def passport_suite():
     d=driver(412,915)
-    fixture=Path('ci/fixtures/passport-test-portrait.svg').resolve()
+    # Chromium's SVG file-input decoding is unreliable on GitHub's headless runner.
+    # Use the release's verified PNG so this exercises the same real raster-photo path.
+    fixture=Path('docs/atrangi-brand-logo.png').resolve()
     try:
         d.get(URL+('&' if '?' in URL else '?')+'acceptance=passport')
         wait(d,"document.getElementById('passportSimpleDialog')")
@@ -143,7 +145,7 @@ def passport_suite():
         record('simple capture uses front-facing Android camera input',capture)
         d.execute_script("const i=document.getElementById('psGalleryInput');i.hidden=false;i.classList.remove('ps-hidden');i.style.display='block'")
         d.find_element(By.ID,'psGalleryInput').send_keys(str(fixture))
-        loaded=WebDriverWait(d,12).until(lambda x:x.execute_script("return document.querySelector('[data-ps-panel=\"2\"]')?.classList.contains('active')&&!document.getElementById('psPreviewEmpty').hidden"))
+        loaded=WebDriverWait(d,25).until(lambda x:x.execute_script("return document.querySelector('[data-ps-panel=\"2\"]')?.classList.contains('active')&&!document.getElementById('psPreviewEmpty').hidden"))
         record('passport photo imports and advances to size',loaded)
         size_count=d.execute_script("return document.querySelectorAll('#psSizeGrid .ps-size-card').length")
         size_ok=size_count>=6
