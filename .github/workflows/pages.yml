@@ -1,27 +1,55 @@
-name: Atrangi Runtime Diagnostics
+name: Validate and Deploy Atrangi Workspace
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches: [main]
   push:
     branches: [main]
     paths:
       - 'docs/**'
-      - 'scripts/runtime-diagnostics.py'
+      - 'scripts/**'
+      - 'app/**'
+      - 'gradle/**'
+      - 'gradlew'
+      - 'gradlew.bat'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
       - '.github/workflows/pages.yml'
+  workflow_dispatch:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: atrangi-pages-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  diagnose:
+  validate:
+    name: Validate web and Android
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Materialize logo
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Materialize Atrangi logo
         shell: bash
         run: |
+          set -euo pipefail
           python - <<'PY'
           import base64
           from pathlib import Path
@@ -31,50 +59,125 @@ jobs:
               data=data.split(',',1)[1]
           data += '='*((4-len(data)%4)%4)
           png=base64.b64decode(data,validate=False)
-          assert png.startswith(b'\x89PNG\r\n\x1a\n')
+          if not png.startswith(b'\x89PNG\r\n\x1a\n'):
+              raise SystemExit('Atrangi brand source is not a valid PNG')
           Path('docs/atrangi-brand-logo.png').write_bytes(png)
-          print('logo bytes',len(png))
+          print('Atrangi logo bytes:',len(png))
           PY
 
-      - name: Inspect static bundle
+      - name: Validate exact web package
         shell: bash
         run: |
-          mkdir -p ci
+          set -euo pipefail
+          node scripts/verify-web-package.mjs
+          while IFS= read -r -d '' file; do
+            echo "Syntax: $file"
+            node --check "$file"
+          done < <(find docs -maxdepth 1 -type f -name '*.js' -print0 | sort -z)
           python scripts/runtime-diagnostics.py --report ci/runtime-diagnostics.json
-          node --check docs/branding-v716.js
-          node --check docs/sw.js
 
-      - name: Inspect rendered runtime
+      - name: Install browser test dependency
+        run: python -m pip install --disable-pip-version-check selenium
+
+      - name: Run browser acceptance suite
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
+          mkdir -p ci
           python -m http.server 8123 --directory docs >ci/http.log 2>&1 &
           PID=$!
           trap 'kill $PID 2>/dev/null || true' EXIT
           sleep 2
-          CHROME="$(command -v google-chrome-stable || command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
-          test -n "$CHROME"
-          echo "browser=$CHROME"
-          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --virtual-time-budget=10000 --dump-dom http://127.0.0.1:8123/?ci=1 >ci/rendered-dom.html
-          python scripts/runtime-diagnostics.py --report ci/runtime-diagnostics.json --rendered-dom ci/rendered-dom.html
+          python scripts/browser-acceptance.py http://127.0.0.1:8123/
 
-      - name: Record diagnostic result
-        if: always()
+      - name: Build Android debug APK
         shell: bash
         run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: atrangi-v718-validation
+          path: |
+            ci/
+            app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: ignore
+          retention-days: 14
+
+  deploy:
+    name: Deploy GitHub Pages
+    if: github.event_name != 'pull_request'
+    needs: validate
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Materialize Atrangi logo
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import base64
+          from pathlib import Path
+          raw=Path('docs/atrangi-brand-logo.b64').read_text(encoding='utf-8-sig')
+          data=''.join(raw.split())
+          if data.startswith('data:image') and ',' in data:
+              data=data.split(',',1)[1]
+          data += '='*((4-len(data)%4)%4)
+          png=base64.b64decode(data,validate=False)
+          if not png.startswith(b'\x89PNG\r\n\x1a\n'):
+              raise SystemExit('Atrangi brand source is not a valid PNG')
+          Path('docs/atrangi-brand-logo.png').write_bytes(png)
+          PY
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Record deployment result
+        if: always()
+        shell: bash
+        env:
+          DEPLOY_STATUS: ${{ job.status }}
+          SOURCE_COMMIT: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          DEPLOYED_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
           mkdir -p ci
+          export RECORDED_AT_UTC="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           python - <<'PY'
           import json,os
-          from pathlib import Path
-          p=Path('ci/runtime-diagnostics.json')
-          data=json.loads(p.read_text()) if p.exists() else {}
-          data['diagnosticSourceCommit']=os.environ.get('GITHUB_SHA','')
-          data['diagnosticRunId']=os.environ.get('GITHUB_RUN_ID','')
-          p.write_text(json.dumps(data,indent=2,ensure_ascii=False)+'\n')
+          result={
+            'status':os.environ.get('DEPLOY_STATUS','unknown'),
+            'sourceCommit':os.environ.get('SOURCE_COMMIT',''),
+            'workflowRun':os.environ.get('RUN_ID',''),
+            'runAttempt':os.environ.get('RUN_ATTEMPT',''),
+            'deployedUrl':os.environ.get('DEPLOYED_URL',''),
+            'recordedAtUtc':os.environ.get('RECORDED_AT_UTC','')
+          }
+          open('ci/pages-deploy-status.json','w').write(json.dumps(result,indent=2)+'\n')
           PY
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add ci/runtime-diagnostics.json
-          git commit -m 'CI: record headless runtime diagnostics' || exit 0
+          git add ci/pages-deploy-status.json
+          git commit -m 'CI: record v7.1.8 deployment result' || exit 0
           git pull --rebase origin main
           git push origin HEAD:main
