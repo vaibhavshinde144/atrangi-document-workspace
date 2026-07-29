@@ -1,7 +1,7 @@
 {
-  "status": "failure",
-  "sourceCommit": "ec843c4657c2ffadfe8eb1c838922a069a7bece5",
-  "workflowRun": "30441437159",
-  "deployedUrl": "",
+  "status": "success",
+  "sourceCommit": "3ce1eca6da8feba66b1b5e1b81aab34890979db9",
+  "workflowRun": "30441564360",
+  "deployedUrl": "https://vaibhavshinde144.github.io/atrangi-document-workspace/",
   "webVersion": "7.1.8"
 }
