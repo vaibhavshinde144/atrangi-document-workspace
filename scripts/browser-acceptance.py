@@ -133,9 +133,6 @@ def runtime_suite():
 
 def passport_suite():
     d=driver(412,915)
-    # Chromium's SVG file-input decoding is unreliable on GitHub's headless runner.
-    # Use the release's verified PNG so this exercises the same real raster-photo path.
-    fixture=Path('docs/atrangi-brand-logo.png').resolve()
     try:
         d.get(URL+('&' if '?' in URL else '?')+'acceptance=passport')
         wait(d,"document.getElementById('passportSimpleDialog')")
@@ -143,9 +140,22 @@ def passport_suite():
         record('simple passport start button opens five-step editor',click(d,'#passportNewWorkflowBtn') and WebDriverWait(d,5).until(lambda x:x.execute_script("return document.getElementById('passportSimpleDialog').open&&!document.getElementById('passportPhotoDialog').open")))
         capture=d.execute_script("const i=document.getElementById('psCameraInput');return !!i&&i.accept==='image/*'&&i.getAttribute('capture')==='user'")
         record('simple capture uses front-facing Android camera input',capture)
-        d.execute_script("const i=document.getElementById('psGalleryInput');i.hidden=false;i.classList.remove('ps-hidden');i.style.display='block'")
-        d.find_element(By.ID,'psGalleryInput').send_keys(str(fixture))
-        loaded=WebDriverWait(d,25).until(lambda x:x.execute_script("return document.querySelector('[data-ps-panel=\"2\"]')?.classList.contains('active')&&!document.getElementById('psPreviewEmpty').hidden"))
+        d.set_script_timeout(30)
+        upload=d.execute_async_script("""
+          const done=arguments[0];
+          fetch('atrangi-brand-logo.png?v=721').then(r=>{
+            if(!r.ok)throw new Error(`fixture HTTP ${r.status}`);
+            return r.blob();
+          }).then(blob=>{
+            const file=new File([blob],'passport-acceptance.png',{type:'image/png'});
+            const transfer=new DataTransfer();transfer.items.add(file);
+            const input=document.getElementById('psGalleryInput');input.files=transfer.files;
+            input.dispatchEvent(new Event('change',{bubbles:true}));
+            done({name:file.name,type:file.type,bytes:file.size});
+          }).catch(error=>done({error:String(error)}));
+        """)
+        if upload.get('error') or upload.get('type')!='image/png' or upload.get('bytes',0)<1000:raise RuntimeError(f'passport fixture injection failed: {upload}')
+        loaded=WebDriverWait(d,25).until(lambda x:x.execute_script("return document.querySelector('[data-ps-panel=\"2\"]')?.classList.contains('active')&&document.getElementById('psPreviewEmpty').hidden"))
         record('passport photo imports and advances to size',loaded)
         size_count=d.execute_script("return document.querySelectorAll('#psSizeGrid .ps-size-card').length")
         size_ok=size_count>=6
