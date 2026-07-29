@@ -1,4 +1,4 @@
-name: Atrangi Runtime Diagnostics
+name: Deploy and Validate Atrangi Workspace
 
 on:
   workflow_dispatch:
@@ -11,70 +11,87 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: atrangi-pages
+  cancel-in-progress: false
 
 jobs:
-  diagnose:
+  validate-and-deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Materialize logo
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate packaged application
         shell: bash
         run: |
-          python - <<'PY'
-          import base64
-          from pathlib import Path
-          raw=Path('docs/atrangi-brand-logo.b64').read_text(encoding='utf-8-sig')
-          data=''.join(raw.split())
-          if data.startswith('data:image') and ',' in data:
-              data=data.split(',',1)[1]
-          data += '='*((4-len(data)%4)%4)
-          png=base64.b64decode(data,validate=False)
-          assert png.startswith(b'\x89PNG\r\n\x1a\n')
-          Path('docs/atrangi-brand-logo.png').write_bytes(png)
-          print('logo bytes',len(png))
-          PY
-
-      - name: Inspect static bundle
-        shell: bash
-        run: |
+          set -euo pipefail
           mkdir -p ci
           python scripts/runtime-diagnostics.py --report ci/runtime-diagnostics.json
-          node --check docs/branding-v716.js
-          node --check docs/sw.js
-
-      - name: Inspect rendered runtime
+          python - <<'PY2'
+          import base64,gzip,json
+          from pathlib import Path
+          d=Path('docs')
+          encoded=''.join((d/f'app-{i:02d}.txt').read_text().strip() for i in range(7))
+          html=gzip.decompress(base64.b64decode(encoded)).decode()
+          index=Path('docs/index.html').read_text()
+          required=['brandHomeBtn','themeToggleBtn','atrangi-brand-logo.svg','branding-v718.css','branding-v718.js']
+          for item in required: assert item in index,item
+          assert '<svg' in Path('docs/atrangi-brand-logo.svg').read_text()
+          assert json.loads(Path('docs/version.json').read_text())['webVersion']=='7.1.8'
+          assert 'homePanel' in html and 'desktopNav' in html and 'mobileNav' in html
+          print('Static v7.1.8 package checks passed')
+          PY2
+          for f in docs/*.js; do node --check "$f"; done
+      - name: Browser-rendered mobile checks
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
           python -m http.server 8123 --directory docs >ci/http.log 2>&1 &
           PID=$!
           trap 'kill $PID 2>/dev/null || true' EXIT
           sleep 2
-          CHROME="$(command -v google-chrome-stable || command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          CHROME="$(command -v google-chrome-stable || command -v google-chrome || command -v chromium || true)"
           test -n "$CHROME"
-          echo "browser=$CHROME"
-          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --virtual-time-budget=10000 --dump-dom http://127.0.0.1:8123/?ci=1 >ci/rendered-dom.html
+          timeout 45s "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --disable-background-networking --window-size=412,915 --virtual-time-budget=12000 --dump-dom http://127.0.0.1:8123/?ci=718 >ci/rendered-dom.html || true
+          test -s ci/rendered-dom.html
+          grep -q 'id="brandHomeBtn"' ci/rendered-dom.html
+          grep -q 'id="themeToggleBtn"' ci/rendered-dom.html
+          grep -q 'atrangi-brand-logo.svg' ci/rendered-dom.html
+          grep -q 'data-branding-test="PASS"' ci/rendered-dom.html
+          ! grep -q '<span>A</span>' ci/rendered-dom.html
           python scripts/runtime-diagnostics.py --report ci/runtime-diagnostics.json --rendered-dom ci/rendered-dom.html
-
-      - name: Record diagnostic result
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+      - id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Record verified deployment
         if: always()
         shell: bash
+        env:
+          DEPLOY_STATUS: ${{ job.status }}
+          SOURCE_COMMIT: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          DEPLOYED_URL: ${{ steps.deployment.outputs.page_url }}
         run: |
           mkdir -p ci
-          python - <<'PY'
+          python - <<'PY2'
           import json,os
           from pathlib import Path
-          p=Path('ci/runtime-diagnostics.json')
-          data=json.loads(p.read_text()) if p.exists() else {}
-          data['diagnosticSourceCommit']=os.environ.get('GITHUB_SHA','')
-          data['diagnosticRunId']=os.environ.get('GITHUB_RUN_ID','')
-          p.write_text(json.dumps(data,indent=2,ensure_ascii=False)+'\n')
-          PY
+          Path('ci/pages-deploy-status.json').write_text(json.dumps({'status':os.environ.get('DEPLOY_STATUS'),'sourceCommit':os.environ.get('SOURCE_COMMIT'),'workflowRun':os.environ.get('RUN_ID'),'deployedUrl':os.environ.get('DEPLOYED_URL'),'webVersion':'7.1.8'},indent=2)+'\n')
+          PY2
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add ci/runtime-diagnostics.json
-          git commit -m 'CI: record headless runtime diagnostics' || exit 0
+          git add ci/pages-deploy-status.json ci/runtime-diagnostics.json
+          git commit -m 'CI: record verified v7.1.8 deployment' || exit 0
           git pull --rebase origin main
           git push origin HEAD:main

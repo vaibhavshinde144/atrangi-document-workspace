@@ -1,12 +1,10 @@
 {
-  "name": "Atrangi Document Workspace v7.1.7",
+  "name": "Atrangi Document Workspace v7.1.8",
   "short_name": "Atrangi Workspace",
-  "start_url": "./",
+  "start_url": "./?v=718",
   "display": "standalone",
   "background_color": "#f4f8f9",
   "theme_color": "#0e3b4d",
   "description": "All-in-one document scanner, passport photo, OCR, PDF conversion, universal file workspace and secure document toolkit.",
-  "icons": [
-    {"src":"atrangi-brand-logo.png?v=717","sizes":"256x256","type":"image/png","purpose":"any"}
-  ]
+  "icons": [{"src":"atrangi-brand-logo.svg?v=718","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
 }
