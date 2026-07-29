@@ -1,9 +1,9 @@
-name: Deploy Website to GitHub Pages
+name: Atrangi Runtime Diagnostics
 
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
       - 'docs/**'
       - 'scripts/runtime-diagnostics.py'
@@ -11,123 +11,70 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: false
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  diagnose:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Materialize Atrangi brand image
+      - name: Materialize logo
         shell: bash
         run: |
-          set -euo pipefail
           python - <<'PY'
-          import base64, pathlib
-          raw = pathlib.Path('docs/atrangi-brand-logo.b64').read_text(encoding='utf-8-sig')
-          compact = ''.join(raw.split())
-          if compact.startswith('data:image') and ',' in compact:
-              compact = compact.split(',', 1)[1]
-          compact += '=' * ((4 - len(compact) % 4) % 4)
-          data = base64.b64decode(compact, validate=False)
-          if not data.startswith(b'\x89PNG\r\n\x1a\n'):
-              raise SystemExit('Atrangi brand source did not decode to PNG')
-          pathlib.Path('docs/atrangi-brand-logo.png').write_bytes(data)
-          print('Atrangi PNG bytes:', len(data))
+          import base64
+          from pathlib import Path
+          raw=Path('docs/atrangi-brand-logo.b64').read_text(encoding='utf-8-sig')
+          data=''.join(raw.split())
+          if data.startswith('data:image') and ',' in data:
+              data=data.split(',',1)[1]
+          data += '='*((4-len(data)%4)%4)
+          png=base64.b64decode(data,validate=False)
+          assert png.startswith(b'\x89PNG\r\n\x1a\n')
+          Path('docs/atrangi-brand-logo.png').write_bytes(png)
+          print('logo bytes',len(png))
           PY
 
-      - name: Smoke check package
+      - name: Inspect static bundle
         shell: bash
         run: |
-          set -euo pipefail
+          mkdir -p ci
+          python scripts/runtime-diagnostics.py --report ci/runtime-diagnostics.json
           node --check docs/branding-v716.js
           node --check docs/sw.js
-          python scripts/runtime-diagnostics.py --report ci/runtime-diagnostics.json
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          v=json.loads(Path('docs/version.json').read_text())
-          assert v['webVersion']=='7.1.7', v
-          assert Path('docs/atrangi-brand-logo.png').stat().st_size > 1000
-          print('Static package checks passed')
-          PY
 
-      - name: Render app in headless Chrome
+      - name: Inspect rendered runtime
         shell: bash
         run: |
-          set -euo pipefail
-          mkdir -p ci
+          set -e
           python -m http.server 8123 --directory docs >ci/http.log 2>&1 &
-          SERVER_PID=$!
-          trap 'kill $SERVER_PID 2>/dev/null || true' EXIT
+          PID=$!
+          trap 'kill $PID 2>/dev/null || true' EXIT
           sleep 2
           CHROME="$(command -v google-chrome-stable || command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
-          test -n "$CHROME" || { echo 'Chrome/Chromium not found'; exit 1; }
-          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --virtual-time-budget=10000 --dump-dom http://127.0.0.1:8123/?ci-runtime=1 > ci/rendered-dom.html
+          test -n "$CHROME"
+          echo "browser=$CHROME"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --virtual-time-budget=10000 --dump-dom http://127.0.0.1:8123/?ci=1 >ci/rendered-dom.html
           python scripts/runtime-diagnostics.py --report ci/runtime-diagnostics.json --rendered-dom ci/rendered-dom.html
 
-      - name: Diagnostic gate
-        shell: bash
-        run: |
-          echo 'Diagnostics captured; deployment is intentionally blocked until runtime fixes pass.'
-          exit 1
-
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload GitHub Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: docs
-
-      - name: Deploy GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-
-      - name: Record result and diagnostics
+      - name: Record diagnostic result
         if: always()
         shell: bash
-        env:
-          DEPLOY_STATUS: ${{ job.status }}
-          SOURCE_COMMIT: ${{ github.sha }}
-          RUN_ID: ${{ github.run_id }}
-          RUN_ATTEMPT: ${{ github.run_attempt }}
-          DEPLOYED_URL: ${{ steps.deployment.outputs.page_url }}
         run: |
-          set -euo pipefail
           mkdir -p ci
-          export RECORDED_AT_UTC="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           python - <<'PY'
-          import json, os
-          result={
-            'status':os.environ.get('DEPLOY_STATUS','unknown'),
-            'sourceCommit':os.environ.get('SOURCE_COMMIT',''),
-            'workflowRun':os.environ.get('RUN_ID',''),
-            'runAttempt':os.environ.get('RUN_ATTEMPT',''),
-            'deployedUrl':os.environ.get('DEPLOYED_URL',''),
-            'recordedAtUtc':os.environ.get('RECORDED_AT_UTC','')
-          }
-          open('ci/pages-deploy-status.json','w').write(json.dumps(result,indent=2)+'\n')
+          import json,os
+          from pathlib import Path
+          p=Path('ci/runtime-diagnostics.json')
+          data=json.loads(p.read_text()) if p.exists() else {}
+          data['diagnosticSourceCommit']=os.environ.get('GITHUB_SHA','')
+          data['diagnosticRunId']=os.environ.get('GITHUB_RUN_ID','')
+          p.write_text(json.dumps(data,indent=2,ensure_ascii=False)+'\n')
           PY
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add ci/pages-deploy-status.json
-          test ! -f ci/runtime-diagnostics.json || git add ci/runtime-diagnostics.json
-          git commit -m 'CI: record Atrangi browser diagnostics' || exit 0
+          git add ci/runtime-diagnostics.json
+          git commit -m 'CI: record headless runtime diagnostics' || exit 0
           git pull --rebase origin main
           git push origin HEAD:main
