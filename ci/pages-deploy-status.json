@@ -1,8 +1,7 @@
 {
   "status": "failure",
-  "sourceCommit": "a1abcbeb6c0987851a6c2841916b97624bef183a",
-  "workflowRun": "30439873730",
-  "runAttempt": "1",
+  "sourceCommit": "8fe3cc9cb16f4730f83fac50374f322bfd7dc42b",
+  "workflowRun": "30441190511",
   "deployedUrl": "",
-  "recordedAtUtc": "2026-07-29T09:30:12Z"
+  "webVersion": "7.1.8"
 }
