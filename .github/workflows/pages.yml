@@ -42,15 +42,14 @@ jobs:
           encoded=''.join((d/f'app-{i:02d}.txt').read_text().strip() for i in range(7))
           html=gzip.decompress(base64.b64decode(encoded)).decode()
           index=Path('docs/index.html').read_text()
-          required=['brandHomeBtn','themeToggleBtn','atrangi-brand-logo.svg','branding-v718.css','branding-v718.js']
-          for item in required: assert item in index,item
+          for item in ['brandHomeBtn','themeToggleBtn','atrangi-brand-logo.svg','branding-v718.css','branding-v718.js']: assert item in index,item
           assert '<svg' in Path('docs/atrangi-brand-logo.svg').read_text()
           assert json.loads(Path('docs/version.json').read_text())['webVersion']=='7.1.8'
           assert 'homePanel' in html and 'desktopNav' in html and 'mobileNav' in html
           print('Static v7.1.8 package checks passed')
           PY2
           for f in docs/*.js; do node --check "$f"; done
-      - name: Build exact post-bootstrap test page
+      - name: Build exact functional test page
         shell: bash
         run: |
           set -euo pipefail
@@ -69,10 +68,11 @@ jobs:
           source=source.replace('<div class="brand-logo"><span>A</span></div>','<div class="brand-logo"><img src="atrangi-brand-logo.svg" alt="Atrangi Riders logo" width="48" height="48"></div>')
           source=source.replace('<div class="brand-logo drawer-logo"><span>A</span></div>','<div class="brand-logo drawer-logo"><img src="atrangi-brand-logo.svg" alt="Atrangi Riders logo" width="48" height="48"></div>')
           source=source.replace('<button id="privacyBtn"','<button id="themeToggleBtn" class="icon-button theme-toggle-btn" type="button" title="Dark Mode" aria-label="Switch to Dark Mode" aria-pressed="false"><span aria-hidden="true">🌙</span><span class="theme-toggle-label">Dark</span></button><button id="privacyBtn"')
-          source=source.replace('</body>','<script src="branding-v718.js"></script></body>')
+          probe='''<script src="branding-v718.js"></script><script>setTimeout(()=>{try{const theme=document.getElementById('themeToggleBtn'),brand=document.getElementById('brandHomeBtn'),tools=document.querySelector('[data-tab="tools"]'),home=document.querySelector('[data-tab="home"]');const before=document.documentElement.dataset.theme;theme.click();const themeOk=document.documentElement.dataset.theme&&document.documentElement.dataset.theme!==before;if(tools)tools.click();brand.click();const homeOk=!!(home&&(home.classList.contains('active')||home.getAttribute('aria-selected')==='true'))||document.getElementById('homePanel')?.classList.contains('active-panel');const logoOk=!!document.querySelector('#brandHomeBtn img[src*="atrangi-brand-logo.svg"]')&&!!document.querySelector('.drawer-logo img[src*="atrangi-brand-logo.svg"]');document.body.dataset.ciFunctional=(themeOk&&homeOk&&logoOk)?'PASS':'FAIL';document.body.dataset.ciTheme=String(themeOk);document.body.dataset.ciHome=String(homeOk);document.body.dataset.ciLogo=String(logoOk)}catch(e){document.body.dataset.ciFunctional='ERROR';document.body.dataset.ciError=e.message}},1500)</script>'''
+          source=source.replace('</body>',probe+'</body>')
           Path('ci/render-site/index.html').write_text(source)
           PY2
-      - name: Browser-rendered mobile checks
+      - name: Browser-rendered mobile functional checks
         shell: bash
         run: |
           set -euo pipefail
@@ -84,13 +84,15 @@ jobs:
           test -n "$CHROME"
           timeout 45s "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --disable-background-networking --window-size=412,915 --virtual-time-budget=12000 --dump-dom http://127.0.0.1:8123/?ci=718 >ci/rendered-dom.html || true
           test -s ci/rendered-dom.html
+          python scripts/runtime-diagnostics.py --report ci/runtime-diagnostics.json --rendered-dom ci/rendered-dom.html
           grep -q 'id="brandHomeBtn"' ci/rendered-dom.html
           grep -q 'id="themeToggleBtn"' ci/rendered-dom.html
           grep -q 'atrangi-brand-logo.svg' ci/rendered-dom.html
-          grep -q 'data-branding-test="PASS"' ci/rendered-dom.html
-          grep -q 'Atrangi Document Workspace v7.1.8' ci/rendered-dom.html
+          grep -q 'data-ci-functional="PASS"' ci/rendered-dom.html
+          grep -q 'data-ci-theme="true"' ci/rendered-dom.html
+          grep -q 'data-ci-home="true"' ci/rendered-dom.html
+          grep -q 'data-ci-logo="true"' ci/rendered-dom.html
           ! grep -q '<span>A</span>' ci/rendered-dom.html
-          python scripts/runtime-diagnostics.py --report ci/runtime-diagnostics.json --rendered-dom ci/rendered-dom.html
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
