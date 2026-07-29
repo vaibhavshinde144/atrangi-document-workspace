@@ -1,0 +1,41 @@
+/* Atrangi v7.1.6 branding + professional light/dark theme */
+.brand-home-link{cursor:pointer;border-radius:12px;outline-offset:4px}.brand-home-link:focus-visible{outline:3px solid rgba(90,213,244,.7)}
+.brand-logo.atrangi-logo-live{padding:0!important;overflow:hidden;background:#050607!important;border-radius:50%!important;box-shadow:0 0 0 1px rgba(232,202,124,.55),0 5px 16px rgba(0,0,0,.18)}
+.atrangi-brand-image{display:block;width:100%;height:100%;object-fit:contain;border-radius:50%}
+.atrangi-drawer-logo{width:56px;height:56px;object-fit:contain;border-radius:50%;background:#050607;box-shadow:0 0 0 1px rgba(232,202,124,.5);cursor:pointer;margin-right:10px}
+.theme-toggle-btn{width:auto!important;min-width:78px!important;padding:0 10px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:6px!important;white-space:nowrap}
+.theme-toggle-label{font-size:10px;font-weight:800}.theme-toggle-icon{font-size:16px;line-height:1}
+
+html[data-theme="dark"]{color-scheme:dark;--bg:#07151c;--surface:#0d2029;--surface-soft:#102934;--surface-strong:#15333f;--line:#274651;--ink:#edf8fb;--text:#edf8fb;--muted:#9db1b8;--accent:#21b8df;--accent-soft:#123845}
+html[data-theme="dark"],html[data-theme="dark"] body{background:#07151c!important;color:#edf8fb!important}
+html[data-theme="dark"] .app-shell,html[data-theme="dark"] .main-content,html[data-theme="dark"] .panel{background:#07151c!important;color:#edf8fb}
+html[data-theme="dark"] .desktop-nav,html[data-theme="dark"] .mobile-nav{background:rgba(10,29,38,.97)!important;border-color:#274651!important;color:#dceef3!important}
+html[data-theme="dark"] .desktop-nav button,html[data-theme="dark"] .mobile-nav button{color:#a9c0c7}
+html[data-theme="dark"] .desktop-nav button.active,html[data-theme="dark"] .mobile-nav button.active{background:#123845!important;color:#59d1ef!important}
+html[data-theme="dark"] .workspace-card,html[data-theme="dark"] .settings-card,html[data-theme="dark"] .quick-card,html[data-theme="dark"] .tool-group-card,html[data-theme="dark"] .tool-card-button,html[data-theme="dark"] .v71-whats-new,html[data-theme="dark"] .v71-feature-grid button,html[data-theme="dark"] .pre-scan-card,html[data-theme="dark"] .v5-source-card,html[data-theme="dark"] .v5-result-card,html[data-theme="dark"] .v6-card,html[data-theme="dark"] .passport-policy-warning,html[data-theme="dark"] .dress-fit-card{background:#0d2029!important;border-color:#274651!important;color:#edf8fb!important;box-shadow:none}
+html[data-theme="dark"] h1,html[data-theme="dark"] h2,html[data-theme="dark"] h3,html[data-theme="dark"] h4,html[data-theme="dark"] h5,html[data-theme="dark"] h6,html[data-theme="dark"] b,html[data-theme="dark"] strong,html[data-theme="dark"] label{color:#edf8fb}
+html[data-theme="dark"] p,html[data-theme="dark"] small,html[data-theme="dark"] .panel-heading p,html[data-theme="dark"] .quick-card small,html[data-theme="dark"] .tool-card-button small,html[data-theme="dark"] .v71-feature-grid small,html[data-theme="dark"] .studio-note{color:#9db1b8!important}
+html[data-theme="dark"] input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),html[data-theme="dark"] select,html[data-theme="dark"] textarea{background:#0a1b23!important;color:#edf8fb!important;border-color:#31515d!important;caret-color:#65d8f3}
+html[data-theme="dark"] input::placeholder,html[data-theme="dark"] textarea::placeholder{color:#718991!important}
+html[data-theme="dark"] .search-field,html[data-theme="dark"] .tool-progress,html[data-theme="dark"] .drop-zone-btn{background:#0b1d25!important;border-color:#31515d!important;color:#dceef3!important}
+html[data-theme="dark"] .secondary-btn,html[data-theme="dark"] .text-btn,html[data-theme="dark"] .action-row button:not(.primary-btn),html[data-theme="dark"] .v5-action-strip button,html[data-theme="dark"] .v6-actions button:not(.primary),html[data-theme="dark"] .passport-nudge-grid button{background:#102934!important;color:#e6f4f7!important;border-color:#31515d!important}
+html[data-theme="dark"] dialog,html[data-theme="dark"] .sheet-card,html[data-theme="dark"] .dialog-card,html[data-theme="dark"] .nav-drawer,html[data-theme="dark"] .drawer{background:#0a1b23!important;color:#edf8fb!important;border-color:#274651!important}
+html[data-theme="dark"] dialog::backdrop{background:rgba(0,0,0,.72)}
+html[data-theme="dark"] .drawer-section,html[data-theme="dark"] .drawer-section button{border-color:#274651!important;color:#ddecf1!important}
+html[data-theme="dark"] .universal-hero,html[data-theme="dark"] .universal-drop,html[data-theme="dark"] .universal-stats>div,html[data-theme="dark"] .universal-file-card,html[data-theme="dark"] .universal-file-main,html[data-theme="dark"] .universal-star,html[data-theme="dark"] .universal-more{background:#0d2029!important;border-color:#274651!important;color:#edf8fb!important}
+html[data-theme="dark"] .universal-toolbar input,html[data-theme="dark"] .universal-toolbar select{background:#0a1b23!important;color:#edf8fb!important;border-color:#31515d!important}
+html[data-theme="dark"] .universal-empty{border-color:#31515d!important;color:#91a7ae!important}
+html[data-theme="dark"] .uv-shell,html[data-theme="dark"] .uv-left,html[data-theme="dark"] .uv-right,html[data-theme="dark"] .uv-bottom{background:#0b1d25!important;color:#edf8fb!important;border-color:#274651!important}
+html[data-theme="dark"] .uv-centre{background:#061219!important}
+html[data-theme="dark"] .uv-right-tabs,html[data-theme="dark"] .uv-bottom,html[data-theme="dark"] .uv-outline button,html[data-theme="dark"] .uv-inline-actions button,html[data-theme="dark"] .uv-sheet-tabs button,html[data-theme="dark"] .uv-text-head{border-color:#274651!important;background:#102934!important;color:#e4f1f5!important}
+html[data-theme="dark"] .uv-document-render,html[data-theme="dark"] .uv-slide-card,html[data-theme="dark"] .uv-ebook-section,html[data-theme="dark"] .uv-email,html[data-theme="dark"] .universal-fallback,html[data-theme="dark"] .uv-media,html[data-theme="dark"] .uv-sheet-wrap,html[data-theme="dark"] .uv-image-stage{background:#f4f2eb!important;color:#172126!important}
+html[data-theme="dark"] .uv-text-editor{background:#091a22!important;color:#eaf5f8!important}
+html[data-theme="dark"] .uv-property-grid input,html[data-theme="dark"] .uv-property-grid textarea,html[data-theme="dark"] .uv-property-grid select,html[data-theme="dark"] .uv-security input,html[data-theme="dark"] .uv-security select,html[data-theme="dark"] .uv-inline-form input,html[data-theme="dark"] .uv-inline-form textarea,html[data-theme="dark"] .uv-inline-form select{background:#091a22!important;color:#eaf5f8!important;border-color:#31515d!important}
+html[data-theme="dark"] .uv-side-list article,html[data-theme="dark"] .uv-text-index,html[data-theme="dark"] .uv-audit div{background:#102934!important;border-color:#274651!important;color:#eaf5f8!important}
+html[data-theme="dark"] .dress-card{background:#0d2029!important;border-color:#274651!important;color:#edf8fb!important}
+html[data-theme="dark"] .dress-thumb-photo{background:linear-gradient(180deg,#17303a,#0c2028)!important;border-color:#31515d!important}
+html[data-theme="dark"] .version-chip{background:#133846!important;color:#65d8f3!important;border-color:#285361!important}
+html[data-theme="dark"] .toast{background:#132a34!important;color:#f3fbfd!important;border-color:#31515d!important}
+
+@media(max-width:720px){.theme-toggle-btn{min-width:40px!important;width:40px!important;padding:0!important}.theme-toggle-label{display:none}.atrangi-drawer-logo{width:48px;height:48px}}
+@media(prefers-reduced-motion:reduce){.brand-home-link,.theme-toggle-btn{transition:none!important}}
