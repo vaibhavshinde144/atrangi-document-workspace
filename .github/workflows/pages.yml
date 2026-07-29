@@ -122,6 +122,56 @@ jobs:
           print(json.dumps({k:report[k] for k in ['htmlBytes','hasTopbar','hasBrandBlock','hasBrandLogo','hasTopActions','hasHomePanel','hasDesktopNav','hasMobileNav','hasThemeToggleInBase','hasAtrangiPlaceholder']},indent=2))
           PY
 
+      - name: Exercise rendered page in headless Chrome
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci
+          python -m http.server 8123 --directory docs >ci/http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID 2>/dev/null || true' EXIT
+          sleep 2
+          CHROME="$(command -v google-chrome-stable || command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          if [ -z "$CHROME" ]; then
+            echo "Chrome/Chromium is not installed on this runner" >&2
+            exit 1
+          fi
+          echo "Using browser: $CHROME"
+          "$CHROME" \
+            --headless=new \
+            --no-sandbox \
+            --disable-gpu \
+            --disable-dev-shm-usage \
+            --disable-background-networking \
+            --virtual-time-budget=10000 \
+            --dump-dom \
+            http://127.0.0.1:8123/?ci-runtime=1 > ci/rendered-dom.html
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          p=Path('ci/rendered-dom.html')
+          dom=p.read_text(encoding='utf-8',errors='replace')
+          report_path=Path('ci/runtime-diagnostics.json')
+          report=json.loads(report_path.read_text(encoding='utf-8'))
+          runtime={
+            'renderedDomBytes':len(dom.encode()),
+            'brandingScriptLoaded':'branding-v716.js' in dom,
+            'brandingCssLoaded':'branding-v716.css' in dom,
+            'hasBrandImageClass':'atrangi-brand-image' in dom,
+            'hasAtrangiLogoLive':'atrangi-logo-live' in dom,
+            'hasThemeToggle':'id="themeToggleBtn"' in dom or 'id="atrangiFloatingTheme"' in dom,
+            'hasThemeDataset':bool(re.search(r'<html[^>]+data-theme=',dom,re.I)),
+            'hasVersionDataset':'data-atrangi-version="7.1.7"' in dom,
+            'hasHomeBinding':'data-atrangi-home-bound="1"' in dom,
+            'stillHasHeaderPlaceholder':bool(re.search(r'<div class="brand-logo[^>]*>\s*<span>A</span>',dom,re.I)),
+            'titleIs717':'<title>Atrangi Document Workspace v7.1.7</title>' in dom,
+            'bodyHasApp':'id="app"' in dom,
+          }
+          report['browserRuntime']=runtime
+          report_path.write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
+          print(json.dumps(runtime,indent=2))
+          PY
+
       - name: Diagnostic-only gate — do not deploy yet
         shell: bash
         run: |
@@ -171,6 +221,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add ci/pages-deploy-status.json
           test ! -f ci/runtime-diagnostics.json || git add ci/runtime-diagnostics.json
-          git commit -m "CI: record Atrangi runtime diagnostics" || exit 0
+          git commit -m "CI: record Atrangi browser runtime diagnostics" || exit 0
           git pull --rebase origin main
           git push origin HEAD:main
