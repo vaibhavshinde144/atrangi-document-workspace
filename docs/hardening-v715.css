@@ -1,0 +1,8 @@
+/* Atrangi v7.1.5 mobile/Android hardening. Browser layout is unchanged unless the native wrapper ?app= marker is present. */
+:root{--atrangi-native-top:0px}
+html.atrangi-native-shell{--atrangi-native-top:max(env(safe-area-inset-top),26px);background:#103a4c}
+html.atrangi-native-shell body:before{content:"";position:fixed;inset:0 0 auto;height:var(--atrangi-native-top);background:linear-gradient(135deg,#103a4c,#164f64);z-index:80;pointer-events:none}
+html.atrangi-native-shell .app-shell{padding-top:var(--atrangi-native-top)}
+html.atrangi-native-shell .topbar{top:var(--atrangi-native-top)}
+html.atrangi-native-shell .desktop-nav{top:calc(68px + var(--atrangi-native-top))}
+@media(max-width:720px){html.atrangi-native-shell .desktop-nav{top:auto}}
