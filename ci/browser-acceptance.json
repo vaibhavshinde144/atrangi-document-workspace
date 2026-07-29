@@ -8,18 +8,18 @@
     },
     {
       "name": "browser title v7.1.8",
-      "ok": false,
-      "detail": "Atrangi Document Workspace v7.1"
+      "ok": true,
+      "detail": "Atrangi Document Workspace v7.1.8"
     },
     {
       "name": "runtime version marker",
-      "ok": false,
-      "detail": "7.1.5"
+      "ok": true,
+      "detail": "7.1.8"
     },
     {
       "name": "visible version labels v7.1.8",
-      "ok": false,
-      "detail": "{\"chip\": \"v7.1.5 All-in-One\", \"drawer\": \"v7.1.5 \\u2022 All-in-One Document Platform\", \"hero\": \"ATRANGI DOCUMENT WORKSPACE v7.1.5\"}"
+      "ok": true,
+      "detail": "{\"chip\": \"v7.1.8 All-in-One\", \"drawer\": \"v7.1.8 \\u2022 All-in-One Document Platform\", \"hero\": \"ATRANGI DOCUMENT WORKSPACE v7.1.8\"}"
     },
     {
       "name": "header and drawer logos load",
@@ -82,9 +82,49 @@
       "detail": ""
     },
     {
-      "name": "runtime suite completed",
-      "ok": false,
-      "detail": "TimeoutException()"
+      "name": "drawer logo returns Home",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "drawer opens",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "drawer closes",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "hero Files Workspace route",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "hero Import route",
+      "ok": true,
+      "detail": "filesPanel active"
+    },
+    {
+      "name": "universal text-file import",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "tools search/filter",
+      "ok": true,
+      "detail": "14"
+    },
+    {
+      "name": "scan entry action",
+      "ok": true,
+      "detail": "True"
+    },
+    {
+      "name": "no severe JavaScript console errors",
+      "ok": true,
+      "detail": ""
     },
     {
       "name": "responsive small-mobile",
@@ -107,11 +147,6 @@
       "detail": "{\"header\": {\"bottom\": 68, \"height\": 68, \"left\": 0, \"right\": 1425, \"toJSON\": {}, \"top\": 0, \"width\": 1425, \"x\": 0, \"y\": 0}, \"innerWidth\": 1440, \"logo\": true, \"scrollWidth\": 1425, \"theme\": true}"
     }
   ],
-  "failureCount": 4,
-  "failures": [
-    "browser title v7.1.8: Atrangi Document Workspace v7.1",
-    "runtime version marker: 7.1.5",
-    "visible version labels v7.1.8: {\"chip\": \"v7.1.5 All-in-One\", \"drawer\": \"v7.1.5 \\u2022 All-in-One Document Platform\", \"hero\": \"ATRANGI DOCUMENT WORKSPACE v7.1.5\"}",
-    "runtime suite completed: TimeoutException()"
-  ]
+  "failureCount": 0,
+  "failures": []
 }
