@@ -7,34 +7,25 @@ const root = path.resolve(import.meta.dirname, '..');
 const docs = path.join(root, 'docs');
 const loader = fs.readFileSync(path.join(docs, 'index.html'), 'utf8');
 const chunkList = loader.match(/const names=\[([^\]]+)\]/);
-
 assert.ok(chunkList, 'docs/index.html must declare its application chunks');
 const chunks = [...chunkList[1].matchAll(/'([^']+)'/g)].map((match) => match[1]);
 assert.ok(chunks.length > 0, 'the application chunk list must not be empty');
-
-const encoded = chunks.map((name) => {
-  const file = path.join(docs, name);
-  assert.ok(fs.existsSync(file), `missing application chunk: ${name}`);
-  return fs.readFileSync(file, 'utf8').trim();
-}).join('');
-
-const applicationHtml = gunzipSync(Buffer.from(encoded, 'base64')).toString('utf8');
-assert.match(applicationHtml, /<!doctype html>/i, 'decoded application is not HTML');
-
-const assetUrls = [...applicationHtml.matchAll(/<(?:link|script)[^>]+(?:href|src)="([^"]+)"[^>]*>/gi)].map((match) => match[1]);
-const localAssets = assetUrls.filter((url) => !/^(?:[a-z]+:|\/\/|#|data:)/i.test(url)).map((url) => url.split(/[?#]/, 1)[0]);
-
-assert.ok(localAssets.filter((name) => name.endsWith('.css')).length >= 5, 'decoded application must reference its complete stylesheet set');
-assert.ok(localAssets.filter((name) => name.endsWith('.js')).length >= 12, 'decoded application must reference its complete script set');
-for (const asset of new Set(localAssets)) assert.ok(fs.existsSync(path.join(docs, asset)), `missing deployed asset: ${asset}`);
-
-for (const asset of ['hardening-v715.css','hardening-v715.js','branding-v716.css','branding-v716.js','atrangi-brand-logo.b64']) assert.ok(fs.existsSync(path.join(docs, asset)), `missing release asset: ${asset}`);
-const brand = Buffer.from(fs.readFileSync(path.join(docs,'atrangi-brand-logo.b64'),'utf8').trim(),'base64');
-assert.ok(brand.length > 1000, 'brand image is unexpectedly small');
+const encoded = chunks.map((name) => { const file=path.join(docs,name); assert.ok(fs.existsSync(file),`missing application chunk: ${name}`); return fs.readFileSync(file,'utf8').trim(); }).join('');
+const applicationHtml = gunzipSync(Buffer.from(encoded,'base64')).toString('utf8');
+assert.match(applicationHtml,/<!doctype html>/i,'decoded application is not HTML');
+const assetUrls=[...applicationHtml.matchAll(/<(?:link|script)[^>]+(?:href|src)="([^"]+)"[^>]*>/gi)].map(m=>m[1]);
+const localAssets=assetUrls.filter(url=>!/^(?:[a-z]+:|\/\/|#|data:)/i.test(url)).map(url=>url.split(/[?#]/,1)[0]);
+assert.ok(localAssets.filter(n=>n.endsWith('.css')).length>=5,'decoded application must reference its complete stylesheet set');
+assert.ok(localAssets.filter(n=>n.endsWith('.js')).length>=12,'decoded application must reference its complete script set');
+for(const asset of new Set(localAssets))assert.ok(fs.existsSync(path.join(docs,asset)),`missing deployed asset: ${asset}`);
+for(const asset of ['hardening-v715.css','hardening-v715.js','branding-v716.css','branding-v716.js','atrangi-brand-logo.b64','atrangi-brand-logo.png'])assert.ok(fs.existsSync(path.join(docs,asset)),`missing release asset: ${asset}`);
+const brand=Buffer.from(fs.readFileSync(path.join(docs,'atrangi-brand-logo.b64'),'utf8').trim(),'base64');
+assert.ok(brand.length>1000,'brand image is unexpectedly small');
 assert.equal(brand.subarray(1,4).toString('ascii'),'PNG','brand source must decode to PNG');
-
-const update = JSON.parse(fs.readFileSync(path.join(docs, 'version.json'), 'utf8'));
-assert.match(update.webVersion, /^\d+\.\d+\.\d+$/, 'webVersion must be semantic');
-assert.equal(update.webVersion, '7.1.6', 'deployment manifest must match the current hosted release');
-assert.match(loader, /release='716'/, 'loader cache-bust release must be 716');
+const published=fs.readFileSync(path.join(docs,'atrangi-brand-logo.png'));
+assert.equal(published.subarray(1,4).toString('ascii'),'PNG','materialized brand image must be PNG');
+const update=JSON.parse(fs.readFileSync(path.join(docs,'version.json'),'utf8'));
+assert.match(update.webVersion,/^\d+\.\d+\.\d+$/,'webVersion must be semantic');
+assert.equal(update.webVersion,'7.1.6','deployment manifest must match current hosted release');
+assert.match(loader,/release='716'/,'loader cache-bust release must be 716');
 console.log(`Verified ${chunks.length} chunks, ${new Set(localAssets).size} base assets and v7.1.6 branding/theme release files.`);
