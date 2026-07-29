@@ -8,6 +8,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 URL=sys.argv[1] if len(sys.argv)>1 else 'http://127.0.0.1:8123/'
 OUT=Path(os.environ.get('ATRANGI_TEST_REPORT','ci/browser-acceptance.json'));OUT.parent.mkdir(parents=True,exist_ok=True)
+INSTALL_URL='https://vaibhavshinde144.github.io/atrangi-document-workspace/downloads/Atrangi-Document-Workspace.apk'
 checks=[];failures=[]
 def record(name,ok,detail=''):
     item={'name':name,'ok':bool(ok),'detail':str(detail)[:1600]};checks.append(item)
@@ -41,7 +42,7 @@ def core_selftest_suite():
         core=d.execute_script("return document.body.dataset.selfTest||''")
         brand=d.execute_script("return document.body.dataset.brandingFunctionalTest||''")
         record('built-in scanner core self-test',core=='PASS',core)
-        record('branding/theme/navigation functional self-test',brand=='PASS',brand)
+        record('branding/theme/navigation/share functional self-test',brand=='PASS',brand)
         body=d.execute_script("return document.body.innerText||''")
         leaked=any(x in body for x in ['const text=source.replace','DecompressionStream','Unable to load app:','hardCss=document.createElement'])
         record('no bootstrap JavaScript rendered as page text',not leaked,body[:500] if leaked else 'clean')
@@ -56,11 +57,11 @@ def runtime_suite():
         wait(d,"document.getElementById('app')")
         wait(d,"document.body && document.body.dataset.brandingTest==='PASS'",16)
         record('runtime app and branding initialized',True)
-        record('browser title v7.1.9',d.title=='Atrangi Document Workspace v7.1.9',d.title)
+        record('browser title v7.2.0',d.title=='Atrangi Document Workspace v7.2.0',d.title)
         version=d.execute_script("return document.documentElement.dataset.atrangiVersion||''")
-        record('runtime version marker',version=='7.1.9',version)
+        record('runtime version marker',version=='7.2.0',version)
         labels=d.execute_script("return {chip:document.querySelector('.version-chip')?.textContent||'',drawer:document.querySelector('.drawer-head small')?.textContent||'',hero:document.querySelector('.hero-badge-row .eyebrow')?.textContent||''}")
-        record('visible version labels v7.1.9',all('7.1.9' in labels[k] for k in labels),json.dumps(labels))
+        record('visible version labels v7.2.0',all('7.2.0' in labels[k] for k in labels),json.dumps(labels))
         body=d.execute_script("return document.body.innerText||''")
         record('runtime has no loader/bootstrap text',not any(x in body for x in ['Loading Atrangi Document Workspace','const text=source.replace','Unable to load app:']),body[:500])
         direct=d.execute_script("return ![...document.scripts].some(s=>/DecompressionStream|document\\.write\\(text\\)/.test(s.textContent||''))")
@@ -89,12 +90,26 @@ def runtime_suite():
         drawer_logo_bound=click(d,'.drawer-logo')
         if drawer_logo_bound:WebDriverWait(d,5).until(lambda x:active(x,'homePanel'))
         record('drawer logo returns Home',drawer_logo_bound and active(d,'homePanel'))
+
         opened=click(d,'#menuBtn')
         if opened:WebDriverWait(d,5).until(lambda x:x.execute_script("const n=document.getElementById('navDrawer');return n&&!n.hidden&&n.getAttribute('aria-hidden')!=='true'"))
         record('drawer opens',opened)
+        share_visible=d.execute_script("const b=document.getElementById('shareAppBtn');if(!b)return false;const r=b.getBoundingClientRect(),s=getComputedStyle(b);return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'")
+        record('Share / Install App visible in hamburger menu',share_visible)
+        d.execute_script("Object.defineProperty(navigator,'share',{configurable:true,value:async p=>{window.__atrangiSharePayload=p;return true;}})")
+        shared=click(d,'#shareAppBtn')
+        if shared:WebDriverWait(d,5).until(lambda x:x.execute_script("return !!window.__atrangiSharePayload"))
+        payload=d.execute_script("return window.__atrangiSharePayload||null")
+        record('Share App invokes platform sharing',shared and bool(payload),json.dumps(payload))
+        record('Share App uses stable APK install URL',bool(payload) and payload.get('url')==INSTALL_URL,json.dumps(payload))
+        closed_by_share=d.execute_script("const n=document.getElementById('navDrawer');return !n||n.hidden||n.getAttribute('aria-hidden')==='true'")
+        record('Share App closes hamburger menu',closed_by_share)
+        opened2=click(d,'#menuBtn')
+        if opened2:WebDriverWait(d,5).until(lambda x:x.execute_script("const n=document.getElementById('navDrawer');return n&&!n.hidden&&n.getAttribute('aria-hidden')!=='true'"))
         closed=click(d,'#drawerCloseBtn')
         if closed:WebDriverWait(d,5).until(lambda x:x.execute_script("const n=document.getElementById('navDrawer');return !n||n.hidden||n.getAttribute('aria-hidden')==='true'"))
-        record('drawer closes',closed)
+        record('drawer closes',opened2 and closed)
+
         click(d,'#mobileNav [data-tab="home"],#desktopNav [data-tab="home"]')
         record('hero Files Workspace route',click(d,'#heroWorkspaceBtn') and WebDriverWait(d,5).until(lambda x:active(x,'filesPanel')))
         click(d,'#mobileNav [data-tab="home"],#desktopNav [data-tab="home"]');imp=click(d,'#heroImportBtn');time.sleep(.25);record('hero Import route',imp and active(d,'filesPanel'),'filesPanel active')
@@ -112,9 +127,9 @@ def responsive_suite():
         d=driver(w,h)
         try:
             d.get(URL+('&' if '?' in URL else '?')+f'acceptance={label}');wait(d,"document.getElementById('app')");wait(d,"document.body.dataset.brandingTest==='PASS'",16)
-            m=d.execute_script("const de=document.documentElement,b=document.body,h=document.querySelector('.topbar'),l=document.querySelector('.topbar .brand-logo img'),t=document.getElementById('themeToggleBtn');const v=e=>!!e&&getComputedStyle(e).display!=='none'&&getComputedStyle(e).visibility!=='hidden'&&e.getBoundingClientRect().width>0;return {innerWidth,scrollWidth:Math.max(de.scrollWidth,b.scrollWidth),header:h?h.getBoundingClientRect():null,logo:v(l),theme:v(t)}")
+            m=d.execute_script("const de=document.documentElement,b=document.body,h=document.querySelector('.topbar'),l=document.querySelector('.topbar .brand-logo img'),t=document.getElementById('themeToggleBtn'),share=document.getElementById('shareAppBtn');const v=e=>!!e&&getComputedStyle(e).display!=='none'&&getComputedStyle(e).visibility!=='hidden'&&e.getBoundingClientRect().width>0;return {innerWidth,scrollWidth:Math.max(de.scrollWidth,b.scrollWidth),header:h?h.getBoundingClientRect():null,logo:v(l),theme:v(t),shareExists:!!share}")
             no_over=m['scrollWidth']<=m['innerWidth']+2;head=m['header'] and m['header']['left']>=-2 and m['header']['right']<=m['innerWidth']+2
-            record(f'responsive {label}',no_over and head and m['logo'] and m['theme'],json.dumps(m))
+            record(f'responsive {label}',no_over and head and m['logo'] and m['theme'] and m['shareExists'],json.dumps(m))
         except Exception as e:record(f'responsive {label}',False,repr(e))
         finally:d.quit()
 
