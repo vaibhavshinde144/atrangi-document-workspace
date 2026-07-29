@@ -9,7 +9,7 @@ on:
       - '.github/workflows/pages.yml'
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -58,7 +58,7 @@ jobs:
             docs/app-04.txt \
             docs/app-05.txt \
             docs/app-06.txt; do
-            test -s "$file" || { echo "Missing or empty required file: $file"; exit 1; }
+              test -s "$file" || { echo "Missing or empty required file: $file"; exit 1; }
           done
           node --check docs/branding-v716.js
           node --check docs/sw.js
@@ -75,3 +75,37 @@ jobs:
       - name: Deploy GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Record deployment result
+        if: always()
+        shell: bash
+        env:
+          DEPLOY_STATUS: ${{ job.status }}
+          SOURCE_COMMIT: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          DEPLOYED_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          mkdir -p ci
+          export RECORDED_AT_UTC="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          python - <<'PY'
+          import json, os
+          result = {
+              "status": os.environ.get("DEPLOY_STATUS", "unknown"),
+              "sourceCommit": os.environ.get("SOURCE_COMMIT", ""),
+              "workflowRun": os.environ.get("RUN_ID", ""),
+              "runAttempt": os.environ.get("RUN_ATTEMPT", ""),
+              "deployedUrl": os.environ.get("DEPLOYED_URL", ""),
+              "recordedAtUtc": os.environ.get("RECORDED_AT_UTC", "")
+          }
+          with open("ci/pages-deploy-status.json", "w", encoding="utf-8") as f:
+              json.dump(result, f, indent=2)
+              f.write("\n")
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ci/pages-deploy-status.json
+          git commit -m "CI: record GitHub Pages deployment result" || exit 0
+          git pull --rebase origin main
+          git push origin HEAD:main
