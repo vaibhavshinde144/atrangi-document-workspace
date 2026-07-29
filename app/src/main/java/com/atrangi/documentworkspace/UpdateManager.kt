@@ -28,13 +28,17 @@ internal data class RemoteUpdateInfo(
     val nativeVersionName: String,
     val mandatory: Boolean,
     val title: String,
-    val notes: String
+    val notes: String,
+    val apkUrl: String
 )
 
 internal object UpdateManager {
     const val VERSION_URL = "https://vaibhavshinde144.github.io/atrangi-document-workspace/version.json"
+    const val DEFAULT_APK_URL = "https://vaibhavshinde144.github.io/atrangi-document-workspace/downloads/Atrangi-Document-Workspace.apk"
     const val EXTRA_WEB_VERSION = "atrangi.extra.WEB_VERSION"
     const val EXTRA_APPLY_WEB_UPDATE = "atrangi.extra.APPLY_WEB_UPDATE"
+    const val EXTRA_NATIVE_UPDATE = "atrangi.extra.NATIVE_UPDATE"
+    const val EXTRA_APK_URL = "atrangi.extra.APK_URL"
 
     private const val PREFS = "atrangi_updates"
     private const val KEY_APPLIED_WEB_VERSION = "applied_web_version"
@@ -125,7 +129,8 @@ internal object UpdateManager {
                 nativeVersionName = json.optString("nativeVersionName", BuildConfig.VERSION_NAME),
                 mandatory = json.optBoolean("mandatory", false),
                 title = json.optString("title", "Atrangi update available"),
-                notes = json.optString("notes", "A newer Atrangi workspace is ready.")
+                notes = json.optString("notes", "A newer Atrangi workspace is ready."),
+                apkUrl = json.optString("apkUrl", DEFAULT_APK_URL).ifBlank { DEFAULT_APK_URL }
             )
         } finally {
             connection.disconnect()
@@ -146,7 +151,8 @@ internal object UpdateManager {
 
         val intent = Intent(context, UpdateActivity::class.java).apply {
             putExtra(EXTRA_WEB_VERSION, info.webVersion)
-            putExtra("native_update", hasNativeUpdate)
+            putExtra(EXTRA_NATIVE_UPDATE, hasNativeUpdate)
+            putExtra(EXTRA_APK_URL, info.apkUrl)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
         val pending = PendingIntent.getActivity(
@@ -156,7 +162,7 @@ internal object UpdateManager {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         val detail = if (hasNativeUpdate) {
-            "A native Android update is available. Atrangi will apply the workspace update now; Android may still require its installer flow for a native package update."
+            "Atrangi ${info.nativeVersionName} is ready. Tap Update to download the Android package with the latest launcher icon and native features."
         } else {
             info.notes
         }
