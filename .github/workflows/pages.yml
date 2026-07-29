@@ -60,6 +60,15 @@ jobs:
             node --check "$file"
           done < <(find docs -maxdepth 1 -type f -name '*.js' -print0 | sort -z)
           python scripts/runtime-diagnostics.py --report ci/runtime-diagnostics.json
+          python - <<'PY'
+          from pathlib import Path
+          html=Path('docs/index.html').read_text(encoding='utf-8')
+          forbidden=['DecompressionStream','document.write(text)','const text=source.replace','hardCss=document.createElement']
+          bad=[x for x in forbidden if x in html]
+          assert not bad, f'inline bootstrap tokens in deployable index: {bad}'
+          assert 'bootstrap-v719.js' in html, 'external bootstrap missing'
+          print('External bootstrap WebView guard passed')
+          PY
 
       - name: Install Selenium
         run: python -m pip install --disable-pip-version-check selenium
@@ -96,7 +105,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: atrangi-v718-validation
+          name: atrangi-v719-validation
           path: |
             ci/
             app/build/outputs/apk/debug/app-debug.apk
@@ -123,7 +132,8 @@ jobs:
             'sourceCommit':os.environ.get('SOURCE_COMMIT',''),
             'workflowRun':os.environ.get('RUN_ID',''),
             'deployedUrl':os.environ.get('DEPLOYED_URL',''),
-            'webVersion':'7.1.8',
+            'webVersion':'7.1.9',
+            'deliveryMode':'external-bootstrap',
             'recordedAtUtc':os.environ.get('RECORDED_AT_UTC','')
           }
           Path('ci/pages-deploy-status.json').write_text(json.dumps(result,indent=2)+'\n')
@@ -133,6 +143,6 @@ jobs:
           git add ci/pages-deploy-status.json
           test ! -f ci/runtime-diagnostics.json || git add ci/runtime-diagnostics.json
           test ! -f ci/browser-acceptance.json || git add ci/browser-acceptance.json
-          git commit -m 'CI: record v7.1.8 full acceptance result' || exit 0
+          git commit -m 'CI: record v7.1.9 external WebView acceptance result' || exit 0
           git pull --rebase origin main
           git push origin HEAD:main
