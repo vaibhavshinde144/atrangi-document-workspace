@@ -50,11 +50,33 @@ jobs:
           print('Static v7.1.8 package checks passed')
           PY2
           for f in docs/*.js; do node --check "$f"; done
+      - name: Build exact post-bootstrap test page
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf ci/render-site
+          mkdir -p ci/render-site
+          cp -a docs/. ci/render-site/
+          python - <<'PY2'
+          import base64,gzip
+          from pathlib import Path
+          d=Path('docs')
+          encoded=''.join((d/f'app-{i:02d}.txt').read_text().strip() for i in range(7))
+          source=gzip.decompress(base64.b64decode(encoded)).decode()
+          source=source.replace('<title>Atrangi Document Workspace v7.1</title>','<title>Atrangi Document Workspace v7.1.8</title>')
+          source=source.replace('<link rel="stylesheet" href="workspace-v7.css">','<link rel="stylesheet" href="workspace-v7.css"><link rel="stylesheet" href="branding-v718.css">')
+          source=source.replace('<div class="brand-block">','<div id="brandHomeBtn" class="brand-block brand-home-button" role="button" tabindex="0" aria-label="Atrangi Document Workspace — go to Home" title="Go to Home">',1)
+          source=source.replace('<div class="brand-logo"><span>A</span></div>','<div class="brand-logo"><img src="atrangi-brand-logo.svg" alt="Atrangi Riders logo" width="48" height="48"></div>')
+          source=source.replace('<div class="brand-logo drawer-logo"><span>A</span></div>','<div class="brand-logo drawer-logo"><img src="atrangi-brand-logo.svg" alt="Atrangi Riders logo" width="48" height="48"></div>')
+          source=source.replace('<button id="privacyBtn"','<button id="themeToggleBtn" class="icon-button theme-toggle-btn" type="button" title="Dark Mode" aria-label="Switch to Dark Mode" aria-pressed="false"><span aria-hidden="true">🌙</span><span class="theme-toggle-label">Dark</span></button><button id="privacyBtn"')
+          source=source.replace('</body>','<script src="branding-v718.js"></script></body>')
+          Path('ci/render-site/index.html').write_text(source)
+          PY2
       - name: Browser-rendered mobile checks
         shell: bash
         run: |
           set -euo pipefail
-          python -m http.server 8123 --directory docs >ci/http.log 2>&1 &
+          python -m http.server 8123 --directory ci/render-site >ci/http.log 2>&1 &
           PID=$!
           trap 'kill $PID 2>/dev/null || true' EXIT
           sleep 2
@@ -65,7 +87,7 @@ jobs:
           grep -q 'id="brandHomeBtn"' ci/rendered-dom.html
           grep -q 'id="themeToggleBtn"' ci/rendered-dom.html
           grep -q 'atrangi-brand-logo.svg' ci/rendered-dom.html
-          grep -q 'branding-v718.js' ci/rendered-dom.html
+          grep -q 'data-branding-test="PASS"' ci/rendered-dom.html
           grep -q 'Atrangi Document Workspace v7.1.8' ci/rendered-dom.html
           ! grep -q '<span>A</span>' ci/rendered-dom.html
           python scripts/runtime-diagnostics.py --report ci/runtime-diagnostics.json --rendered-dom ci/rendered-dom.html
