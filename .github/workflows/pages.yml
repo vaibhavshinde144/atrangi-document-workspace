@@ -78,6 +78,56 @@ jobs:
           node --check docs/sw.js
           node -e "const fs=require('fs'); const v=JSON.parse(fs.readFileSync('docs/version.json','utf8')); if(v.webVersion!=='7.1.7') throw new Error('Expected webVersion 7.1.7, got '+v.webVersion); JSON.parse(fs.readFileSync('docs/manifest.webmanifest','utf8')); const p=fs.readFileSync('docs/atrangi-brand-logo.png'); if(p.length<1000||p[0]!==0x89||p.toString('ascii',1,4)!=='PNG') throw new Error('Invalid Atrangi PNG'); console.log('Atrangi web package smoke check passed for v'+v.webVersion);"
 
+      - name: Inspect actual bundled runtime contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci
+          python - <<'PY'
+          import base64,gzip,json,re
+          from pathlib import Path
+          docs=Path('docs')
+          names=[f'app-{i:02d}.txt' for i in range(7)]
+          encoded=''.join((docs/n).read_text(encoding='utf-8').strip() for n in names)
+          source=gzip.decompress(base64.b64decode(encoded)).decode('utf-8','replace')
+          def snippet(term,radius=1000):
+              i=source.find(term)
+              if i<0:return ''
+              return re.sub(r'\s+',' ',source[max(0,i-radius):min(len(source),i+radius)])
+          classes=re.findall(r'class=["\']([^"\']+)["\']',source,re.I)
+          ids=re.findall(r'id=["\']([^"\']+)["\']',source,re.I)
+          refs=re.findall(r'<(?:script|link)\b[^>]+(?:src|href)=["\']([^"\']+)["\']',source,re.I)
+          report={
+            'htmlBytes':len(source.encode()),
+            'hasTopbar':bool(re.search(r'class=["\'][^"\']*\btopbar\b',source,re.I)),
+            'hasBrandBlock':'brand-block' in source,
+            'hasBrandLogo':'brand-logo' in source,
+            'hasTopActions':'top-actions' in source,
+            'hasHomePanel':'homePanel' in source,
+            'hasDesktopNav':'desktopNav' in source,
+            'hasMobileNav':'mobileNav' in source,
+            'hasThemeToggleInBase':'themeToggleBtn' in source,
+            'hasAtrangiPlaceholder':bool(re.search(r'>\s*A\s*<',source)),
+            'assetRefs':refs,
+            'ids':sorted(set(ids)),
+            'classes':sorted(set(c for group in classes for c in group.split())),
+            'topbarSnippet':snippet('topbar'),
+            'brandSnippet':snippet('brand-block'),
+            'logoSnippet':snippet('brand-logo'),
+            'actionsSnippet':snippet('top-actions'),
+            'homeSnippet':snippet('homePanel'),
+            'titleSnippet':snippet('Atrangi Document Workspace'),
+          }
+          Path('ci/runtime-diagnostics.json').write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
+          print(json.dumps({k:report[k] for k in ['htmlBytes','hasTopbar','hasBrandBlock','hasBrandLogo','hasTopActions','hasHomePanel','hasDesktopNav','hasMobileNav','hasThemeToggleInBase','hasAtrangiPlaceholder']},indent=2))
+          PY
+
+      - name: Diagnostic-only gate — do not deploy yet
+        shell: bash
+        run: |
+          echo "Runtime diagnostics captured. Deployment intentionally blocked until fixes are validated."
+          exit 1
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
@@ -120,6 +170,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add ci/pages-deploy-status.json
-          git commit -m "CI: record GitHub Pages deployment result" || exit 0
+          test ! -f ci/runtime-diagnostics.json || git add ci/runtime-diagnostics.json
+          git commit -m "CI: record Atrangi runtime diagnostics" || exit 0
           git pull --rebase origin main
           git push origin HEAD:main
