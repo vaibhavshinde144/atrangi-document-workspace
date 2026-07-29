@@ -1,0 +1,3 @@
+Atrangi Document Workspace v7.2.0 production release marker.
+Launcher: approved Atrangi Riders logo.
+Menu: Share / Install App with stable public Android APK URL.
