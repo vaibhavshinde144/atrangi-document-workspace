@@ -1,11 +1,12 @@
 {
   "htmlBytes": 65683,
-  "webVersion": "7.1.8",
+  "loaderBytes": 1070,
+  "webVersion": "7.1.9",
+  "deliveryMode": "external-bootstrap",
   "hasTopbar": true,
-  "bootstrapInjectsBrandHome": true,
-  "bootstrapInjectsThemeToggle": true,
-  "bootstrapInjectsLogo": true,
-  "hasHomePanel": true,
-  "hasDesktopNav": true,
-  "hasMobileNav": true
+  "loaderIsExternal": true,
+  "indexHasInlineBootstrap": false,
+  "baseHasHomePanel": true,
+  "baseHasDesktopNav": true,
+  "baseHasMobileNav": true
 }

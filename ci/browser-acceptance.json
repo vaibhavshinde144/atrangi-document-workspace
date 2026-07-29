@@ -2,29 +2,64 @@
   "url": "http://127.0.0.1:8123/",
   "checks": [
     {
+      "name": "built-in scanner core self-test",
+      "ok": true,
+      "detail": "PASS"
+    },
+    {
+      "name": "branding/theme/navigation functional self-test",
+      "ok": true,
+      "detail": "PASS"
+    },
+    {
+      "name": "no bootstrap JavaScript rendered as page text",
+      "ok": true,
+      "detail": "clean"
+    },
+    {
+      "name": "core self-test has no severe JavaScript console errors",
+      "ok": true,
+      "detail": ""
+    },
+    {
       "name": "runtime app and branding initialized",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "browser title v7.1.8",
+      "name": "browser title v7.1.9",
       "ok": true,
-      "detail": "Atrangi Document Workspace v7.1.8"
+      "detail": "Atrangi Document Workspace v7.1.9"
     },
     {
       "name": "runtime version marker",
       "ok": true,
-      "detail": "7.1.8"
+      "detail": "7.1.9"
     },
     {
-      "name": "visible version labels v7.1.8",
+      "name": "visible version labels v7.1.9",
       "ok": true,
-      "detail": "{\"chip\": \"v7.1.8 All-in-One\", \"drawer\": \"v7.1.8 \\u2022 All-in-One Document Platform\", \"hero\": \"ATRANGI DOCUMENT WORKSPACE v7.1.8\"}"
+      "detail": "{\"chip\": \"v7.1.9 All-in-One\", \"drawer\": \"v7.1.9 \\u2022 All-in-One Document Platform\", \"hero\": \"ATRANGI DOCUMENT WORKSPACE v7.1.9\"}"
+    },
+    {
+      "name": "runtime has no loader/bootstrap text",
+      "ok": true,
+      "detail": "\u2630\nAtrangi Document Workspace\n\ud83c\udf19\n\u22ee\nATRANGI DOCUMENT WORKSPACE v7.1.9\nALL-IN-ONE\nScan, create, view, edit and manage documents in one app.\n\nOne workspace for document scanning, passport photos, PDF tools, Word/Excel/text files, OCR, annotations, version history, conversion, signatures, security and universal file viewing.\n\n\ud83d\udcf7 Scan document\n\ud83d\udcc1 Import any file\n\u2317 Open Files Workspace\n\ud83d\udcf7 Scan\n\ud83e\udeaa Passport & ID\n\ud83d\udcc2 View & Edit\n\ud83d\udd01 Convert\n\u270d Annotate & Sign\n\ud83d\udd12 Secure\nQUICK START\nWhat do you want to do?\nAll tools \u203a"
+    },
+    {
+      "name": "startup implementation is not inline in rendered workspace",
+      "ok": true,
+      "detail": ""
     },
     {
       "name": "header and drawer logos load",
       "ok": true,
-      "detail": "[{\"display\": \"block\", \"h\": 150, \"src\": \"atrangi-brand-logo.svg\", \"w\": 150}, {\"display\": \"block\", \"h\": 150, \"src\": \"atrangi-brand-logo.svg\", \"w\": 150}]"
+      "detail": "[{\"approved\": \"1\", \"display\": \"block\", \"h\": 256, \"src\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAMAAABrrFhUAAAAwFBMVEWYmJ\", \"w\": 256}, {\"approved\": \"1\", \"display\": \"block\", \"h\": 256, \"src\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAMAAABrrFhUAAAAwFBMVEWYmJ\", \"w\": 256}]"
+    },
+    {
+      "name": "approved Atrangi Riders PNG logo applied",
+      "ok": true,
+      "detail": "approved"
     },
     {
       "name": "old A placeholder removed",
