@@ -4,5 +4,5 @@
   "nativeVersionName": "7.1.2",
   "mandatory": false,
   "title": "Atrangi Document Workspace v7.1.7",
-  "notes": "Fixes missing Atrangi Riders logo visibility, makes the logo and Atrangi Document Workspace title reliably return to Home across header variants, restores a visible Light/Dark Mode control even when header markup changes, improves mobile safe-area header placement, and removes the UI dependency on a generated PNG by loading the tracked encrypted-safe brand source directly."
+  "notes": "Fixes missing Atrangi Riders logo visibility, makes the logo and Atrangi Document Workspace title reliably return to Home across header variants, restores a visible Light/Dark Mode control even when header markup changes, improves mobile safe-area header placement, and removes the UI dependency on a generated PNG by loading the tracked brand source directly. This release also forces a clean v7.1.7 cache refresh."
 }
