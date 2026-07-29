@@ -14,4 +14,9 @@ html[data-theme="dark"] input:not([type="range"]):not([type="checkbox"]):not([ty
 html[data-theme="dark"] .nav-drawer,html[data-theme="dark"] dialog,html[data-theme="dark"] .sheet-card,html[data-theme="dark"] .dialog-card{background:#0a1b23!important;color:#edf8fb!important;border-color:#274651!important}
 html[data-theme="dark"] .secondary-btn,html[data-theme="dark"] .text-btn,html[data-theme="dark"] button:not(.primary-btn):not(.active){border-color:#31515d;color:#e6f4f7}
 html[data-theme="dark"] .uv-document-render,html[data-theme="dark"] .uv-slide-card,html[data-theme="dark"] .uv-ebook-section,html[data-theme="dark"] .uv-email,html[data-theme="dark"] .universal-fallback,html[data-theme="dark"] .uv-media,html[data-theme="dark"] .uv-sheet-wrap,html[data-theme="dark"] .uv-image-stage{background:#f4f2eb!important;color:#172126!important}
-@media(max-width:720px){.theme-toggle-btn{min-width:40px!important;width:40px!important;padding:0!important}.theme-toggle-label{display:none}.brand-logo{width:48px!important;height:48px!important}.brand-block h1{font-size:20px!important}.version-chip{display:none!important}}
+@media(max-width:720px){
+ .brand-block{min-width:0!important;flex:1 1 auto!important;gap:7px!important}.brand-block>div:nth-child(2){min-width:0!important;flex:1 1 auto!important}
+ .brand-logo{width:40px!important;height:40px!important;flex:0 0 40px!important}.brand-block h1{font-size:15px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}.brand-block small,.version-chip{display:none!important}
+ .top-actions{gap:2px!important;flex:0 0 auto!important}.theme-toggle-btn{min-width:40px!important;width:40px!important;height:40px!important;padding:0!important}.theme-toggle-label{display:none!important}
+}
+@media(max-width:479px){#privacyBtn,#searchBtn{display:none!important}#themeToggleBtn,#moreBtn{display:inline-flex!important}}
