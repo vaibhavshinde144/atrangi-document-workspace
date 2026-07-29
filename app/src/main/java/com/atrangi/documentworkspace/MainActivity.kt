@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.webkit.DownloadListener
 import android.webkit.GeolocationPermissions
+import android.webkit.JavascriptInterface
 import android.webkit.PermissionRequest
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
@@ -100,6 +101,7 @@ class MainActivity : AppCompatActivity() {
             setSupportMultipleWindows(false)
         }
 
+        webView.addJavascriptInterface(AtrangiNativeBridge(), "AtrangiNative")
         webView.setInitialScale(0)
         webView.isHorizontalScrollBarEnabled = false
 
@@ -191,6 +193,30 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
+    private inner class AtrangiNativeBridge {
+        @JavascriptInterface
+        fun shareApp() {
+            runOnUiThread { shareInstallLink() }
+        }
+
+        @JavascriptInterface
+        fun installUrl(): String = INSTALL_URL
+    }
+
+    private fun shareInstallLink() {
+        val shareText = "Install Atrangi Document Workspace — scanner, OCR, PDF tools, passport/ID photo studio and secure document workspace.\n\n$INSTALL_URL"
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, "Atrangi Document Workspace")
+            putExtra(Intent.EXTRA_TEXT, shareText)
+        }
+        try {
+            startActivity(Intent.createChooser(shareIntent, "Share Atrangi Document Workspace"))
+        } catch (error: Exception) {
+            Toast.makeText(this, "Unable to open share options: ${error.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
     private fun applyLaunchIntent(source: Intent?) {
         val shouldApply = source?.getBooleanExtra(UpdateManager.EXTRA_APPLY_WEB_UPDATE, false) == true
         val version = source?.getStringExtra(UpdateManager.EXTRA_WEB_VERSION)
@@ -219,12 +245,14 @@ class MainActivity : AppCompatActivity() {
         fileChooserCallback = null
         pendingPermissionRequest?.deny()
         pendingPermissionRequest = null
+        webView.removeJavascriptInterface("AtrangiNative")
         webView.destroy()
         super.onDestroy()
     }
 
     companion object {
-        private const val APP_URL = "https://vaibhavshinde144.github.io/atrangi-document-workspace/?app=7.1.2"
+        private const val APP_URL = "https://vaibhavshinde144.github.io/atrangi-document-workspace/?app=7.2.0"
         private const val APP_HOST = "vaibhavshinde144.github.io"
+        private const val INSTALL_URL = "https://vaibhavshinde144.github.io/atrangi-document-workspace/downloads/Atrangi-Document-Workspace.apk"
     }
 }
