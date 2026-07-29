@@ -1,8 +1,8 @@
 {
-  "webVersion": "7.1.6",
+  "webVersion": "7.1.7",
   "nativeVersionCode": 3,
   "nativeVersionName": "7.1.2",
   "mandatory": false,
-  "title": "Atrangi Document Workspace v7.1.6",
-  "notes": "Adds Atrangi Riders branding across the workspace, clickable logo/app-name Home navigation, persistent Light and Dark modes, PWA branding, and prepares the Android launcher icon asset."
+  "title": "Atrangi Document Workspace v7.1.7",
+  "notes": "Fixes missing Atrangi Riders logo visibility, makes the logo and Atrangi Document Workspace title reliably return to Home across header variants, restores a visible Light/Dark Mode control even when header markup changes, improves mobile safe-area header placement, and removes the UI dependency on a generated PNG by loading the tracked encrypted-safe brand source directly."
 }
