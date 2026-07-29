@@ -6,6 +6,7 @@ on:
     branches: [ main ]
     paths:
       - 'docs/**'
+      - 'scripts/runtime-diagnostics.py'
       - '.github/workflows/pages.yml'
 
 permissions:
@@ -36,93 +37,37 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -s docs/atrangi-brand-logo.b64
           python - <<'PY'
           import base64, pathlib
-          src = pathlib.Path('docs/atrangi-brand-logo.b64')
-          raw = src.read_text(encoding='utf-8-sig')
+          raw = pathlib.Path('docs/atrangi-brand-logo.b64').read_text(encoding='utf-8-sig')
           compact = ''.join(raw.split())
           if compact.startswith('data:image') and ',' in compact:
               compact = compact.split(',', 1)[1]
           compact += '=' * ((4 - len(compact) % 4) % 4)
           data = base64.b64decode(compact, validate=False)
           if not data.startswith(b'\x89PNG\r\n\x1a\n'):
-              raise SystemExit('Atrangi brand source did not decode to a PNG')
+              raise SystemExit('Atrangi brand source did not decode to PNG')
           pathlib.Path('docs/atrangi-brand-logo.png').write_bytes(data)
-          print(f'Materialized Atrangi PNG: {len(data)} bytes')
+          print('Atrangi PNG bytes:', len(data))
           PY
-          test -s docs/atrangi-brand-logo.png
 
-      - name: Smoke check web package
+      - name: Smoke check package
         shell: bash
         run: |
           set -euo pipefail
-          for file in \
-            docs/index.html \
-            docs/version.json \
-            docs/branding-v716.js \
-            docs/branding-v716.css \
-            docs/sw.js \
-            docs/manifest.webmanifest \
-            docs/atrangi-brand-logo.png \
-            docs/app-00.txt \
-            docs/app-01.txt \
-            docs/app-02.txt \
-            docs/app-03.txt \
-            docs/app-04.txt \
-            docs/app-05.txt \
-            docs/app-06.txt; do
-              test -s "$file" || { echo "Missing or empty required file: $file"; exit 1; }
-          done
           node --check docs/branding-v716.js
           node --check docs/sw.js
-          node -e "const fs=require('fs'); const v=JSON.parse(fs.readFileSync('docs/version.json','utf8')); if(v.webVersion!=='7.1.7') throw new Error('Expected webVersion 7.1.7, got '+v.webVersion); JSON.parse(fs.readFileSync('docs/manifest.webmanifest','utf8')); const p=fs.readFileSync('docs/atrangi-brand-logo.png'); if(p.length<1000||p[0]!==0x89||p.toString('ascii',1,4)!=='PNG') throw new Error('Invalid Atrangi PNG'); console.log('Atrangi web package smoke check passed for v'+v.webVersion);"
-
-      - name: Inspect actual bundled runtime contract
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p ci
+          python scripts/runtime-diagnostics.py --report ci/runtime-diagnostics.json
           python - <<'PY'
-          import base64,gzip,json,re
+          import json
           from pathlib import Path
-          docs=Path('docs')
-          names=[f'app-{i:02d}.txt' for i in range(7)]
-          encoded=''.join((docs/n).read_text(encoding='utf-8').strip() for n in names)
-          source=gzip.decompress(base64.b64decode(encoded)).decode('utf-8','replace')
-          def snippet(term,radius=1000):
-              i=source.find(term)
-              if i<0:return ''
-              return re.sub(r'\s+',' ',source[max(0,i-radius):min(len(source),i+radius)])
-          classes=re.findall(r'class=["\']([^"\']+)["\']',source,re.I)
-          ids=re.findall(r'id=["\']([^"\']+)["\']',source,re.I)
-          refs=re.findall(r'<(?:script|link)\b[^>]+(?:src|href)=["\']([^"\']+)["\']',source,re.I)
-          report={
-            'htmlBytes':len(source.encode()),
-            'hasTopbar':bool(re.search(r'class=["\'][^"\']*\btopbar\b',source,re.I)),
-            'hasBrandBlock':'brand-block' in source,
-            'hasBrandLogo':'brand-logo' in source,
-            'hasTopActions':'top-actions' in source,
-            'hasHomePanel':'homePanel' in source,
-            'hasDesktopNav':'desktopNav' in source,
-            'hasMobileNav':'mobileNav' in source,
-            'hasThemeToggleInBase':'themeToggleBtn' in source,
-            'hasAtrangiPlaceholder':bool(re.search(r'>\s*A\s*<',source)),
-            'assetRefs':refs,
-            'ids':sorted(set(ids)),
-            'classes':sorted(set(c for group in classes for c in group.split())),
-            'topbarSnippet':snippet('topbar'),
-            'brandSnippet':snippet('brand-block'),
-            'logoSnippet':snippet('brand-logo'),
-            'actionsSnippet':snippet('top-actions'),
-            'homeSnippet':snippet('homePanel'),
-            'titleSnippet':snippet('Atrangi Document Workspace'),
-          }
-          Path('ci/runtime-diagnostics.json').write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
-          print(json.dumps({k:report[k] for k in ['htmlBytes','hasTopbar','hasBrandBlock','hasBrandLogo','hasTopActions','hasHomePanel','hasDesktopNav','hasMobileNav','hasThemeToggleInBase','hasAtrangiPlaceholder']},indent=2))
+          v=json.loads(Path('docs/version.json').read_text())
+          assert v['webVersion']=='7.1.7', v
+          assert Path('docs/atrangi-brand-logo.png').stat().st_size > 1000
+          print('Static package checks passed')
           PY
 
-      - name: Exercise rendered page in headless Chrome
+      - name: Render app in headless Chrome
         shell: bash
         run: |
           set -euo pipefail
@@ -132,50 +77,14 @@ jobs:
           trap 'kill $SERVER_PID 2>/dev/null || true' EXIT
           sleep 2
           CHROME="$(command -v google-chrome-stable || command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
-          if [ -z "$CHROME" ]; then
-            echo "Chrome/Chromium is not installed on this runner" >&2
-            exit 1
-          fi
-          echo "Using browser: $CHROME"
-          "$CHROME" \
-            --headless=new \
-            --no-sandbox \
-            --disable-gpu \
-            --disable-dev-shm-usage \
-            --disable-background-networking \
-            --virtual-time-budget=10000 \
-            --dump-dom \
-            http://127.0.0.1:8123/?ci-runtime=1 > ci/rendered-dom.html
-          python - <<'PY'
-          import json,re
-          from pathlib import Path
-          p=Path('ci/rendered-dom.html')
-          dom=p.read_text(encoding='utf-8',errors='replace')
-          report_path=Path('ci/runtime-diagnostics.json')
-          report=json.loads(report_path.read_text(encoding='utf-8'))
-          runtime={
-            'renderedDomBytes':len(dom.encode()),
-            'brandingScriptLoaded':'branding-v716.js' in dom,
-            'brandingCssLoaded':'branding-v716.css' in dom,
-            'hasBrandImageClass':'atrangi-brand-image' in dom,
-            'hasAtrangiLogoLive':'atrangi-logo-live' in dom,
-            'hasThemeToggle':'id="themeToggleBtn"' in dom or 'id="atrangiFloatingTheme"' in dom,
-            'hasThemeDataset':bool(re.search(r'<html[^>]+data-theme=',dom,re.I)),
-            'hasVersionDataset':'data-atrangi-version="7.1.7"' in dom,
-            'hasHomeBinding':'data-atrangi-home-bound="1"' in dom,
-            'stillHasHeaderPlaceholder':bool(re.search(r'<div class="brand-logo[^>]*>\s*<span>A</span>',dom,re.I)),
-            'titleIs717':'<title>Atrangi Document Workspace v7.1.7</title>' in dom,
-            'bodyHasApp':'id="app"' in dom,
-          }
-          report['browserRuntime']=runtime
-          report_path.write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
-          print(json.dumps(runtime,indent=2))
-          PY
+          test -n "$CHROME" || { echo 'Chrome/Chromium not found'; exit 1; }
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --virtual-time-budget=10000 --dump-dom http://127.0.0.1:8123/?ci-runtime=1 > ci/rendered-dom.html
+          python scripts/runtime-diagnostics.py --report ci/runtime-diagnostics.json --rendered-dom ci/rendered-dom.html
 
-      - name: Diagnostic-only gate — do not deploy yet
+      - name: Diagnostic gate
         shell: bash
         run: |
-          echo "Runtime diagnostics captured. Deployment intentionally blocked until fixes are validated."
+          echo 'Diagnostics captured; deployment is intentionally blocked until runtime fixes pass.'
           exit 1
 
       - name: Configure GitHub Pages
@@ -190,7 +99,7 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Record deployment result
+      - name: Record result and diagnostics
         if: always()
         shell: bash
         env:
@@ -205,22 +114,20 @@ jobs:
           export RECORDED_AT_UTC="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           python - <<'PY'
           import json, os
-          result = {
-              "status": os.environ.get("DEPLOY_STATUS", "unknown"),
-              "sourceCommit": os.environ.get("SOURCE_COMMIT", ""),
-              "workflowRun": os.environ.get("RUN_ID", ""),
-              "runAttempt": os.environ.get("RUN_ATTEMPT", ""),
-              "deployedUrl": os.environ.get("DEPLOYED_URL", ""),
-              "recordedAtUtc": os.environ.get("RECORDED_AT_UTC", "")
+          result={
+            'status':os.environ.get('DEPLOY_STATUS','unknown'),
+            'sourceCommit':os.environ.get('SOURCE_COMMIT',''),
+            'workflowRun':os.environ.get('RUN_ID',''),
+            'runAttempt':os.environ.get('RUN_ATTEMPT',''),
+            'deployedUrl':os.environ.get('DEPLOYED_URL',''),
+            'recordedAtUtc':os.environ.get('RECORDED_AT_UTC','')
           }
-          with open("ci/pages-deploy-status.json", "w", encoding="utf-8") as f:
-              json.dump(result, f, indent=2)
-              f.write("\n")
+          open('ci/pages-deploy-status.json','w').write(json.dumps(result,indent=2)+'\n')
           PY
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add ci/pages-deploy-status.json
           test ! -f ci/runtime-diagnostics.json || git add ci/runtime-diagnostics.json
-          git commit -m "CI: record Atrangi browser runtime diagnostics" || exit 0
+          git commit -m 'CI: record Atrangi browser diagnostics' || exit 0
           git pull --rebase origin main
           git push origin HEAD:main
