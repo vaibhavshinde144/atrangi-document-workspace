@@ -6,10 +6,15 @@ plugins {
 }
 
 val atrangiLogoBase64 = rootProject.file("docs/atrangi-brand-logo.b64")
-val atrangiLogoPng = file("src/main/res/drawable-nodpi/atrangi_logo.png")
+val atrangiLogoPng = file("src/main/res/drawable-nodpi/atrangi_riders_launcher.png")
 if (atrangiLogoBase64.exists()) {
+    val raw = atrangiLogoBase64.readText().trim().substringAfter(',', atrangiLogoBase64.readText().trim())
+    val decoded = Base64.getMimeDecoder().decode(raw)
+    require(decoded.size > 1024 && decoded.take(8).toByteArray().contentEquals(byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A))) {
+        "Atrangi launcher logo must decode to a valid PNG"
+    }
     atrangiLogoPng.parentFile.mkdirs()
-    atrangiLogoPng.writeBytes(Base64.getMimeDecoder().decode(atrangiLogoBase64.readText().trim()))
+    atrangiLogoPng.writeBytes(decoded)
 }
 
 android {
@@ -20,8 +25,8 @@ android {
         applicationId = "com.atrangi.documentworkspace"
         minSdk = 24
         targetSdk = 35
-        versionCode = 4
-        versionName = "7.1.6"
+        versionCode = 5
+        versionName = "7.2.0"
     }
 
     buildFeatures {
