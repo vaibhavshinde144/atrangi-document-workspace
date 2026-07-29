@@ -1,0 +1,2 @@
+Atrangi Document Workspace v7.1.9
+Android/WebView startup repair: external bootstrap, approved logo, theme/Home regression checks, browser acceptance and Android build gate.
