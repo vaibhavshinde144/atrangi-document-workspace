@@ -27,8 +27,8 @@ function goHome(e){
   const nav=findHomeNav();
   if(nav&&nav!==e?.currentTarget){nav.click();}
   else{
-    $$('.panel,.page,.screen,.view').forEach(p=>{if(p.id==='homePanel'||/\bhome\b/i.test(p.id||''))p.classList.add('active-panel','active');});
-    $('#homePanel')?.classList.add('active-panel');
+    const home=$('#homePanel');
+    if(home){$$('.panel').forEach(p=>p.classList.remove('active-panel'));home.classList.add('active-panel');}
     try{history.replaceState(history.state,'',location.pathname+location.search+'#home')}catch(_){ }
   }
   const drawer=$('#navDrawer,.nav-drawer,.drawer'),backdrop=$('#drawerBackdrop,.drawer-backdrop');
@@ -55,8 +55,14 @@ function titleCandidates(){
   const known=['.brand-title','.brand-name','.app-title','.app-name','.title','.brand-block h1','.brand-block strong','.drawer-head strong','.drawer-head b','header h1','header h2'];
   const found=[];
   for(const s of known)found.push(...$$(s));
-  found.push(...$$('h1,h2,h3,strong,b,span,div').filter(el=>el.children.length<4&&/Atrangi\s+Document\s+Workspace/i.test(el.textContent||'')));
-  return [...new Set(found)].filter(el=>/Atrangi\s+Document\s+Workspace/i.test(el.textContent||''));
+  found.push(...$$('h1,h2,h3,strong,b,span,div').filter(el=>{
+    const text=(el.textContent||'').trim();
+    return text.length>0&&text.length<=100&&/Atrangi\s+Document\s+Workspace/i.test(text);
+  }));
+  return [...new Set(found)].filter(el=>{
+    const text=(el.textContent||'').trim();
+    return text.length<=120&&/Atrangi\s+Document\s+Workspace/i.test(text);
+  });
 }
 function headerHost(title){
   return $('.brand-block')||title?.closest('header,.app-header,.top-header,.topbar,.top-bar,.toolbar,.app-bar,[class*="header"],[class*="topbar"],[class*="toolbar"]')||title?.parentElement||$('header')||$('.top-actions')?.parentElement||document.body;
@@ -95,6 +101,7 @@ function ensureFallbackBrand(host){
   if($('#atrangiFallbackBrand'))return;
   const wrap=document.createElement('div');
   wrap.id='atrangiFallbackBrand';wrap.className='atrangi-v717-fallback-brand';
+  if(host&&host!==document.body)wrap.classList.add('atrangi-v717-inline-brand');
   wrap.innerHTML='<button id="atrangiFallbackHome" type="button" class="atrangi-v717-home"><img alt="Atrangi Riders logo" class="atrangi-brand-image"><span>Atrangi Document Workspace</span></button>';
   (host||document.body).insertBefore(wrap,(host||document.body).firstChild||null);
   const home=$('#atrangiFallbackHome');bindHome(home,'Atrangi Document Workspace — go to Home');setLogoImage($('img',home));
@@ -105,14 +112,14 @@ function installBrand(){
   const host=headerHost(title);
   if(host&&host!==document.body)host.classList.add('atrangi-safe-header');
   titles.forEach(t=>bindHome(t,'Atrangi Document Workspace — go to Home'));
-  ensureLogoButton(host,title);
+  const hasNativeBrand=Boolean(title||$('.brand-block')||$('.brand-logo'));
+  if(hasNativeBrand)ensureLogoButton(host,title);else ensureFallbackBrand(host);
   const drawerHead=$('.drawer-head');
   if(drawerHead){
     const drawerTitle=titleCandidates().find(t=>drawerHead.contains(t));
     bindHome(drawerTitle,'Atrangi Document Workspace — go to Home');
     const drawerLogo=$('.brand-logo',drawerHead);if(drawerLogo)bindHome(drawerLogo,'Atrangi Riders logo — go to Home');
   }
-  if(!title&&!$('.brand-block')&&!$('.brand-logo'))ensureFallbackBrand(host);
 }
 
 function preferredTheme(){
