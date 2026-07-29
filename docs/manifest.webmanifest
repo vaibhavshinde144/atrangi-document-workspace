@@ -5,7 +5,7 @@
   "display": "standalone",
   "background_color": "#f4f8f9",
   "theme_color": "#0e3b4d",
-  "description": "All-in-one document scanner, passport photo, OCR, PDF conversion, universal file workspace and secure document toolkit.",
+  "description": "All-in-one document scanner, passport photo, OCR, PDF conversion, universal file workspace and secure document toolkit. v7.1.8 is acceptance-gated before deployment.",
   "icons": [
     {"src":"atrangi-brand-logo.png?v=718","sizes":"256x256","type":"image/png","purpose":"any"}
   ]
