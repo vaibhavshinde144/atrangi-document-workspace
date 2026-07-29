@@ -66,11 +66,11 @@ jobs:
           forbidden=['DecompressionStream','document.write(text)','const text=source.replace','hardCss=document.createElement']
           bad=[x for x in forbidden if x in html]
           assert not bad, f'inline bootstrap tokens in deployable index: {bad}'
-          assert 'bootstrap-v720.js' in html, 'external v7.2.0 bootstrap missing'
-          bootstrap=Path('docs/bootstrap-v720.js').read_text(encoding='utf-8')
-          for token in ['shareAppBtn','Share / Install App','branding-v720.js']:
+          assert 'bootstrap-v721.js' in html, 'external v7.2.1 bootstrap missing'
+          bootstrap=Path('docs/bootstrap-v721.js').read_text(encoding='utf-8')
+          for token in ['shareAppBtn','Share / Install App','branding-v721.js','passport-simple-v721.js','atrangi-startup-gate']:
               assert token in bootstrap, token
-          print('External bootstrap + Share App WebView guard passed')
+          print('External bootstrap + startup + passport + sharing guard passed')
           PY
 
       - name: Install Selenium
@@ -86,7 +86,7 @@ jobs:
           sleep 2
           python scripts/browser-acceptance.py http://127.0.0.1:8123/
 
-      - name: Build Android v7.2.0 APK
+      - name: Build Android v7.2.1 APK
         shell: bash
         run: |
           set -euo pipefail
@@ -94,7 +94,7 @@ jobs:
           APK=app/build/outputs/apk/debug/app-debug.apk
           test -s "$APK"
           unzip -t "$APK" >/dev/null
-          unzip -l "$APK" | grep -q 'atrangi_riders_launcher' || { echo 'Atrangi Riders launcher resource missing from APK'; exit 1; }
+          unzip -l "$APK" | grep -q 'atrangi_riders_logo' || { echo 'Exact Atrangi Riders logo resource missing from APK'; exit 1; }
 
       - name: Prepare public install package
         shell: bash
@@ -103,15 +103,15 @@ jobs:
           APK=app/build/outputs/apk/debug/app-debug.apk
           mkdir -p docs/downloads
           cp "$APK" docs/downloads/Atrangi-Document-Workspace.apk
-          cp "$APK" docs/downloads/Atrangi-Document-Workspace-v7.2.0.apk
+          cp "$APK" docs/downloads/Atrangi-Document-Workspace-v7.2.1.apk
           sha256sum docs/downloads/Atrangi-Document-Workspace.apk | awk '{print $1}' > docs/downloads/Atrangi-Document-Workspace.sha256
           python - <<'PY'
           import hashlib,json
           from pathlib import Path
           p=Path('docs/downloads/Atrangi-Document-Workspace.apk')
           result={
-            'version':'7.2.0',
-            'versionCode':5,
+            'version':'7.2.1',
+            'versionCode':6,
             'apkUrl':'https://vaibhavshinde144.github.io/atrangi-document-workspace/downloads/Atrangi-Document-Workspace.apk',
             'bytes':p.stat().st_size,
             'sha256':hashlib.sha256(p.read_bytes()).hexdigest()
@@ -137,7 +137,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: atrangi-v720-validation
+          name: atrangi-v721-validation
           path: |
             ci/
             app/build/outputs/apk/debug/app-debug.apk
@@ -166,10 +166,10 @@ jobs:
             'sourceCommit':os.environ.get('SOURCE_COMMIT',''),
             'workflowRun':os.environ.get('RUN_ID',''),
             'deployedUrl':os.environ.get('DEPLOYED_URL',''),
-            'webVersion':'7.2.0',
-            'nativeVersionCode':5,
-            'nativeVersionName':'7.2.0',
-            'deliveryMode':'external-bootstrap+public-apk',
+            'webVersion':'7.2.1',
+            'nativeVersionCode':6,
+            'nativeVersionName':'7.2.1',
+            'deliveryMode':'external-bootstrap+startup-gate+simple-passport+native-sharing+public-apk',
             'apkUrl':'https://vaibhavshinde144.github.io/atrangi-document-workspace/downloads/Atrangi-Document-Workspace.apk',
             'recordedAtUtc':os.environ.get('RECORDED_AT_UTC','')
           }
@@ -180,6 +180,6 @@ jobs:
           git add ci/pages-deploy-status.json
           test ! -f ci/runtime-diagnostics.json || git add ci/runtime-diagnostics.json
           test ! -f ci/browser-acceptance.json || git add ci/browser-acceptance.json
-          git commit -m 'CI: record v7.2.0 launcher/share/install acceptance result' || exit 0
+          git commit -m 'CI: record v7.2.1 passport/startup/share acceptance result' || exit 0
           git pull --rebase origin main
           git push origin HEAD:main

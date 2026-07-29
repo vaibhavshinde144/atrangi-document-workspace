@@ -3,4 +3,5 @@
     <color name="atrangi_primary_dark">#083844</color>
     <color name="atrangi_accent">#0EA5D4</color>
     <color name="white">#FFFFFF</color>
+    <color name="atrangi_launcher_background">#050607</color>
 </resources>

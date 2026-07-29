@@ -1,0 +1,2 @@
+Atrangi Document Workspace v7.2.1 production release marker.
+Launcher, simple passport workflow, startup alignment and direct sharing release.

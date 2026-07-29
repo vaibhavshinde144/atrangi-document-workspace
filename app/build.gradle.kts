@@ -1,21 +1,6 @@
-import java.util.Base64
-
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-}
-
-val atrangiLogoBase64 = rootProject.file("docs/atrangi-brand-logo.b64")
-val atrangiLogoPng = file("src/main/res/drawable-nodpi/atrangi_riders_launcher.png")
-if (atrangiLogoBase64.exists()) {
-    val rawText = atrangiLogoBase64.readText().trim()
-    val raw = if (rawText.startsWith("data:image") && rawText.contains(',')) rawText.substringAfter(',') else rawText
-    val decoded = Base64.getMimeDecoder().decode(raw)
-    require(decoded.size > 1024) { "Atrangi launcher logo is unexpectedly small" }
-    val pngHeader = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
-    require(decoded.copyOfRange(0, 8).contentEquals(pngHeader)) { "Atrangi launcher logo must decode to a valid PNG" }
-    atrangiLogoPng.parentFile.mkdirs()
-    atrangiLogoPng.writeBytes(decoded)
 }
 
 android {
@@ -26,8 +11,8 @@ android {
         applicationId = "com.atrangi.documentworkspace"
         minSdk = 24
         targetSdk = 35
-        versionCode = 5
-        versionName = "7.2.0"
+        versionCode = 6
+        versionName = "7.2.1"
     }
 
     buildFeatures {

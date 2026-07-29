@@ -1,9 +1,9 @@
 {
-  "webVersion": "7.2.0",
-  "nativeVersionCode": 5,
-  "nativeVersionName": "7.2.0",
+  "webVersion": "7.2.1",
+  "nativeVersionCode": 6,
+  "nativeVersionName": "7.2.1",
   "mandatory": false,
-  "title": "Atrangi Document Workspace v7.2.0",
-  "notes": "Updates the native Android launcher icon to the approved Atrangi Riders logo, adds Share / Install App in the left hamburger menu, provides a stable public APK install link, and keeps the v7.1.9 WebView startup fix plus all existing scanner, OCR, PDF, file workspace and theme functions.",
+  "title": "Atrangi Document Workspace v7.2.1",
+  "notes": "Uses the supplied circular Atrangi Riders launcher icon, adds a simple five-step passport photo workflow with optional official compliance, fixes direct camera capture and startup alignment, and provides explicit Share to apps and Copy install link actions.",
   "apkUrl": "https://vaibhavshinde144.github.io/atrangi-document-workspace/downloads/Atrangi-Document-Workspace.apk"
 }
