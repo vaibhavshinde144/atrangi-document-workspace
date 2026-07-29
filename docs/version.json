@@ -4,5 +4,5 @@
   "nativeVersionName": "7.1.2",
   "mandatory": false,
   "title": "Atrangi Document Workspace v7.1.8",
-  "notes": "Runtime-corrected release: loads branding and hardening inside the decoded application document so Android WebView reliably receives the Atrangi Riders logo and controls; makes the header and drawer logos plus app title return to Home; adds a persistent Light/Dark Mode control; updates visible v7.1 branding labels; and adds automated mobile/tablet/desktop runtime acceptance checks before deployment."
+  "notes": "Runtime-corrected release: loads branding and hardening inside the decoded application document so Android WebView reliably receives the Atrangi Riders logo and controls; makes the header and drawer logos plus app title return to Home; adds a persistent Light/Dark Mode control; updates visible v7.1 branding labels; and requires automated mobile/tablet/desktop runtime acceptance checks before deployment."
 }
