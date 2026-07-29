@@ -1,0 +1,117 @@
+{
+  "url": "http://127.0.0.1:8123/",
+  "checks": [
+    {
+      "name": "runtime app and branding initialized",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "browser title v7.1.8",
+      "ok": false,
+      "detail": "Atrangi Document Workspace v7.1"
+    },
+    {
+      "name": "runtime version marker",
+      "ok": false,
+      "detail": "7.1.5"
+    },
+    {
+      "name": "visible version labels v7.1.8",
+      "ok": false,
+      "detail": "{\"chip\": \"v7.1.5 All-in-One\", \"drawer\": \"v7.1.5 \\u2022 All-in-One Document Platform\", \"hero\": \"ATRANGI DOCUMENT WORKSPACE v7.1.5\"}"
+    },
+    {
+      "name": "header and drawer logos load",
+      "ok": true,
+      "detail": "[{\"display\": \"block\", \"h\": 150, \"src\": \"atrangi-brand-logo.svg\", \"w\": 150}, {\"display\": \"block\", \"h\": 150, \"src\": \"atrangi-brand-logo.svg\", \"w\": 150}]"
+    },
+    {
+      "name": "old A placeholder removed",
+      "ok": true,
+      "detail": "False"
+    },
+    {
+      "name": "theme control visible on mobile",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "theme toggles and persists",
+      "ok": true,
+      "detail": "light->dark; saved=dark"
+    },
+    {
+      "name": "navigation home",
+      "ok": true,
+      "detail": "homePanel"
+    },
+    {
+      "name": "navigation tools",
+      "ok": true,
+      "detail": "toolsPanel"
+    },
+    {
+      "name": "navigation ocr",
+      "ok": true,
+      "detail": "ocrPanel"
+    },
+    {
+      "name": "navigation idPhoto",
+      "ok": true,
+      "detail": "idPhotoPanel"
+    },
+    {
+      "name": "navigation files",
+      "ok": true,
+      "detail": "filesPanel"
+    },
+    {
+      "name": "navigation settings",
+      "ok": true,
+      "detail": "settingsPanel"
+    },
+    {
+      "name": "header brand returns Home",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "header logo returns Home",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "runtime suite completed",
+      "ok": false,
+      "detail": "TimeoutException()"
+    },
+    {
+      "name": "responsive small-mobile",
+      "ok": true,
+      "detail": "{\"header\": {\"bottom\": 56, \"height\": 56, \"left\": 0, \"right\": 345, \"toJSON\": {}, \"top\": 0, \"width\": 345, \"x\": 0, \"y\": 0}, \"innerWidth\": 360, \"logo\": true, \"scrollWidth\": 345, \"theme\": true}"
+    },
+    {
+      "name": "responsive mobile",
+      "ok": true,
+      "detail": "{\"header\": {\"bottom\": 56, \"height\": 56, \"left\": 0, \"right\": 375, \"toJSON\": {}, \"top\": 0, \"width\": 375, \"x\": 0, \"y\": 0}, \"innerWidth\": 390, \"logo\": true, \"scrollWidth\": 375, \"theme\": true}"
+    },
+    {
+      "name": "responsive tablet",
+      "ok": true,
+      "detail": "{\"header\": {\"bottom\": 68, \"height\": 68, \"left\": 0, \"right\": 753, \"toJSON\": {}, \"top\": 0, \"width\": 753, \"x\": 0, \"y\": 0}, \"innerWidth\": 768, \"logo\": true, \"scrollWidth\": 753, \"theme\": true}"
+    },
+    {
+      "name": "responsive desktop",
+      "ok": true,
+      "detail": "{\"header\": {\"bottom\": 68, \"height\": 68, \"left\": 0, \"right\": 1425, \"toJSON\": {}, \"top\": 0, \"width\": 1425, \"x\": 0, \"y\": 0}, \"innerWidth\": 1440, \"logo\": true, \"scrollWidth\": 1425, \"theme\": true}"
+    }
+  ],
+  "failureCount": 4,
+  "failures": [
+    "browser title v7.1.8: Atrangi Document Workspace v7.1",
+    "runtime version marker: 7.1.5",
+    "visible version labels v7.1.8: {\"chip\": \"v7.1.5 All-in-One\", \"drawer\": \"v7.1.5 \\u2022 All-in-One Document Platform\", \"hero\": \"ATRANGI DOCUMENT WORKSPACE v7.1.5\"}",
+    "runtime suite completed: TimeoutException()"
+  ]
+}
