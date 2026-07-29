@@ -7,7 +7,7 @@
       "detail": "PASS"
     },
     {
-      "name": "branding/theme/navigation functional self-test",
+      "name": "branding/theme/navigation/share functional self-test",
       "ok": true,
       "detail": "PASS"
     },
@@ -27,24 +27,24 @@
       "detail": ""
     },
     {
-      "name": "browser title v7.1.9",
+      "name": "browser title v7.2.0",
       "ok": true,
-      "detail": "Atrangi Document Workspace v7.1.9"
+      "detail": "Atrangi Document Workspace v7.2.0"
     },
     {
       "name": "runtime version marker",
       "ok": true,
-      "detail": "7.1.9"
+      "detail": "7.2.0"
     },
     {
-      "name": "visible version labels v7.1.9",
+      "name": "visible version labels v7.2.0",
       "ok": true,
-      "detail": "{\"chip\": \"v7.1.9 All-in-One\", \"drawer\": \"v7.1.9 \\u2022 All-in-One Document Platform\", \"hero\": \"ATRANGI DOCUMENT WORKSPACE v7.1.9\"}"
+      "detail": "{\"chip\": \"v7.2.0 All-in-One\", \"drawer\": \"v7.2.0 \\u2022 All-in-One Document Platform\", \"hero\": \"ATRANGI DOCUMENT WORKSPACE v7.2.0\"}"
     },
     {
       "name": "runtime has no loader/bootstrap text",
       "ok": true,
-      "detail": "\u2630\nAtrangi Document Workspace\n\ud83c\udf19\n\u22ee\nATRANGI DOCUMENT WORKSPACE v7.1.9\nALL-IN-ONE\nScan, create, view, edit and manage documents in one app.\n\nOne workspace for document scanning, passport photos, PDF tools, Word/Excel/text files, OCR, annotations, version history, conversion, signatures, security and universal file viewing.\n\n\ud83d\udcf7 Scan document\n\ud83d\udcc1 Import any file\n\u2317 Open Files Workspace\n\ud83d\udcf7 Scan\n\ud83e\udeaa Passport & ID\n\ud83d\udcc2 View & Edit\n\ud83d\udd01 Convert\n\u270d Annotate & Sign\n\ud83d\udd12 Secure\nQUICK START\nWhat do you want to do?\nAll tools \u203a"
+      "detail": "\u2630\nAtrangi Document Workspace\n\ud83c\udf19\n\u22ee\nATRANGI DOCUMENT WORKSPACE v7.2.0\nALL-IN-ONE\nScan, create, view, edit and manage documents in one app.\n\nOne workspace for document scanning, passport photos, PDF tools, Word/Excel/text files, OCR, annotations, version history, conversion, signatures, security and universal file viewing.\n\n\ud83d\udcf7 Scan document\n\ud83d\udcc1 Import any file\n\u2317 Open Files Workspace\n\ud83d\udcf7 Scan\n\ud83e\udeaa Passport & ID\n\ud83d\udcc2 View & Edit\n\ud83d\udd01 Convert\n\u270d Annotate & Sign\n\ud83d\udd12 Secure\nQUICK START\nWhat do you want to do?\nAll tools \u203a"
     },
     {
       "name": "startup implementation is not inline in rendered workspace",
@@ -127,6 +127,26 @@
       "detail": ""
     },
     {
+      "name": "Share / Install App visible in hamburger menu",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Share App invokes platform sharing",
+      "ok": true,
+      "detail": "{\"text\": \"Install Atrangi Document Workspace \\u2014 scanner, OCR, PDF tools, passport/ID photo studio and secure document workspace.\", \"title\": \"Atrangi Document Workspace\", \"url\": \"https://vaibhavshinde144.github.io/atrangi-document-workspace/downloads/Atrangi-Document-Workspace.apk\"}"
+    },
+    {
+      "name": "Share App uses stable APK install URL",
+      "ok": true,
+      "detail": "{\"text\": \"Install Atrangi Document Workspace \\u2014 scanner, OCR, PDF tools, passport/ID photo studio and secure document workspace.\", \"title\": \"Atrangi Document Workspace\", \"url\": \"https://vaibhavshinde144.github.io/atrangi-document-workspace/downloads/Atrangi-Document-Workspace.apk\"}"
+    },
+    {
+      "name": "Share App closes hamburger menu",
+      "ok": true,
+      "detail": ""
+    },
+    {
       "name": "drawer closes",
       "ok": true,
       "detail": ""
@@ -164,22 +184,22 @@
     {
       "name": "responsive small-mobile",
       "ok": true,
-      "detail": "{\"header\": {\"bottom\": 56, \"height\": 56, \"left\": 0, \"right\": 345, \"toJSON\": {}, \"top\": 0, \"width\": 345, \"x\": 0, \"y\": 0}, \"innerWidth\": 360, \"logo\": true, \"scrollWidth\": 345, \"theme\": true}"
+      "detail": "{\"header\": {\"bottom\": 56, \"height\": 56, \"left\": 0, \"right\": 345, \"toJSON\": {}, \"top\": 0, \"width\": 345, \"x\": 0, \"y\": 0}, \"innerWidth\": 360, \"logo\": true, \"scrollWidth\": 345, \"shareExists\": true, \"theme\": true}"
     },
     {
       "name": "responsive mobile",
       "ok": true,
-      "detail": "{\"header\": {\"bottom\": 56, \"height\": 56, \"left\": 0, \"right\": 375, \"toJSON\": {}, \"top\": 0, \"width\": 375, \"x\": 0, \"y\": 0}, \"innerWidth\": 390, \"logo\": true, \"scrollWidth\": 375, \"theme\": true}"
+      "detail": "{\"header\": {\"bottom\": 56, \"height\": 56, \"left\": 0, \"right\": 375, \"toJSON\": {}, \"top\": 0, \"width\": 375, \"x\": 0, \"y\": 0}, \"innerWidth\": 390, \"logo\": true, \"scrollWidth\": 375, \"shareExists\": true, \"theme\": true}"
     },
     {
       "name": "responsive tablet",
       "ok": true,
-      "detail": "{\"header\": {\"bottom\": 68, \"height\": 68, \"left\": 0, \"right\": 753, \"toJSON\": {}, \"top\": 0, \"width\": 753, \"x\": 0, \"y\": 0}, \"innerWidth\": 768, \"logo\": true, \"scrollWidth\": 753, \"theme\": true}"
+      "detail": "{\"header\": {\"bottom\": 68, \"height\": 68, \"left\": 0, \"right\": 753, \"toJSON\": {}, \"top\": 0, \"width\": 753, \"x\": 0, \"y\": 0}, \"innerWidth\": 768, \"logo\": true, \"scrollWidth\": 753, \"shareExists\": true, \"theme\": true}"
     },
     {
       "name": "responsive desktop",
       "ok": true,
-      "detail": "{\"header\": {\"bottom\": 68, \"height\": 68, \"left\": 0, \"right\": 1425, \"toJSON\": {}, \"top\": 0, \"width\": 1425, \"x\": 0, \"y\": 0}, \"innerWidth\": 1440, \"logo\": true, \"scrollWidth\": 1425, \"theme\": true}"
+      "detail": "{\"header\": {\"bottom\": 68, \"height\": 68, \"left\": 0, \"right\": 1425, \"toJSON\": {}, \"top\": 0, \"width\": 1425, \"x\": 0, \"y\": 0}, \"innerWidth\": 1440, \"logo\": true, \"scrollWidth\": 1425, \"shareExists\": true, \"theme\": true}"
     }
   ],
   "failureCount": 0,

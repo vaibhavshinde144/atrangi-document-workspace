@@ -1,12 +1,13 @@
 {
   "htmlBytes": 65683,
   "loaderBytes": 1070,
-  "webVersion": "7.1.9",
+  "webVersion": "7.2.0",
   "deliveryMode": "external-bootstrap",
   "hasTopbar": true,
   "loaderIsExternal": true,
   "indexHasInlineBootstrap": false,
   "baseHasHomePanel": true,
   "baseHasDesktopNav": true,
-  "baseHasMobileNav": true
+  "baseHasMobileNav": true,
+  "bootstrapInjectsShare": true
 }
