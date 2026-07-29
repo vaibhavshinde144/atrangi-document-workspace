@@ -66,8 +66,11 @@ jobs:
           forbidden=['DecompressionStream','document.write(text)','const text=source.replace','hardCss=document.createElement']
           bad=[x for x in forbidden if x in html]
           assert not bad, f'inline bootstrap tokens in deployable index: {bad}'
-          assert 'bootstrap-v719.js' in html, 'external bootstrap missing'
-          print('External bootstrap WebView guard passed')
+          assert 'bootstrap-v720.js' in html, 'external v7.2.0 bootstrap missing'
+          bootstrap=Path('docs/bootstrap-v720.js').read_text(encoding='utf-8')
+          for token in ['shareAppBtn','Share / Install App','branding-v720.js']:
+              assert token in bootstrap, token
+          print('External bootstrap + Share App WebView guard passed')
           PY
 
       - name: Install Selenium
@@ -83,11 +86,40 @@ jobs:
           sleep 2
           python scripts/browser-acceptance.py http://127.0.0.1:8123/
 
-      - name: Build Android debug APK
+      - name: Build Android v7.2.0 APK
         shell: bash
         run: |
           set -euo pipefail
           gradle :app:assembleDebug --no-daemon --stacktrace
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          unzip -t "$APK" >/dev/null
+          unzip -l "$APK" | grep -q 'atrangi_riders_launcher' || { echo 'Atrangi Riders launcher resource missing from APK'; exit 1; }
+
+      - name: Prepare public install package
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          mkdir -p docs/downloads
+          cp "$APK" docs/downloads/Atrangi-Document-Workspace.apk
+          cp "$APK" docs/downloads/Atrangi-Document-Workspace-v7.2.0.apk
+          sha256sum docs/downloads/Atrangi-Document-Workspace.apk | awk '{print $1}' > docs/downloads/Atrangi-Document-Workspace.sha256
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          p=Path('docs/downloads/Atrangi-Document-Workspace.apk')
+          result={
+            'version':'7.2.0',
+            'versionCode':5,
+            'apkUrl':'https://vaibhavshinde144.github.io/atrangi-document-workspace/downloads/Atrangi-Document-Workspace.apk',
+            'bytes':p.stat().st_size,
+            'sha256':hashlib.sha256(p.read_bytes()).hexdigest()
+          }
+          Path('docs/downloads/latest.json').write_text(json.dumps(result,indent=2)+'\n')
+          print(json.dumps(result,indent=2))
+          PY
+          test -s docs/downloads/Atrangi-Document-Workspace.apk
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
@@ -105,10 +137,12 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: atrangi-v719-validation
+          name: atrangi-v720-validation
           path: |
             ci/
             app/build/outputs/apk/debug/app-debug.apk
+            docs/downloads/latest.json
+            docs/downloads/Atrangi-Document-Workspace.sha256
           if-no-files-found: ignore
           retention-days: 14
 
@@ -132,8 +166,11 @@ jobs:
             'sourceCommit':os.environ.get('SOURCE_COMMIT',''),
             'workflowRun':os.environ.get('RUN_ID',''),
             'deployedUrl':os.environ.get('DEPLOYED_URL',''),
-            'webVersion':'7.1.9',
-            'deliveryMode':'external-bootstrap',
+            'webVersion':'7.2.0',
+            'nativeVersionCode':5,
+            'nativeVersionName':'7.2.0',
+            'deliveryMode':'external-bootstrap+public-apk',
+            'apkUrl':'https://vaibhavshinde144.github.io/atrangi-document-workspace/downloads/Atrangi-Document-Workspace.apk',
             'recordedAtUtc':os.environ.get('RECORDED_AT_UTC','')
           }
           Path('ci/pages-deploy-status.json').write_text(json.dumps(result,indent=2)+'\n')
@@ -143,6 +180,6 @@ jobs:
           git add ci/pages-deploy-status.json
           test ! -f ci/runtime-diagnostics.json || git add ci/runtime-diagnostics.json
           test ! -f ci/browser-acceptance.json || git add ci/browser-acceptance.json
-          git commit -m 'CI: record v7.1.9 external WebView acceptance result' || exit 0
+          git commit -m 'CI: record v7.2.0 launcher/share/install acceptance result' || exit 0
           git pull --rebase origin main
           git push origin HEAD:main
