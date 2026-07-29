@@ -1,13 +1,14 @@
 {
   "htmlBytes": 65683,
-  "loaderBytes": 1070,
-  "webVersion": "7.2.0",
-  "deliveryMode": "external-bootstrap",
+  "loaderBytes": 1452,
+  "webVersion": "7.2.1",
+  "deliveryMode": "external-bootstrap+startup-gate+public-apk",
   "hasTopbar": true,
   "loaderIsExternal": true,
   "indexHasInlineBootstrap": false,
   "baseHasHomePanel": true,
   "baseHasDesktopNav": true,
   "baseHasMobileNav": true,
-  "bootstrapInjectsShare": true
+  "bootstrapInjectsShare": true,
+  "bootstrapInjectsSimplePassport": true
 }
