@@ -37,7 +37,20 @@ jobs:
         run: |
           set -euo pipefail
           test -s docs/atrangi-brand-logo.b64
-          base64 --decode docs/atrangi-brand-logo.b64 > docs/atrangi-brand-logo.png
+          python - <<'PY'
+          import base64, pathlib
+          src = pathlib.Path('docs/atrangi-brand-logo.b64')
+          raw = src.read_text(encoding='utf-8-sig')
+          compact = ''.join(raw.split())
+          if compact.startswith('data:image') and ',' in compact:
+              compact = compact.split(',', 1)[1]
+          compact += '=' * ((4 - len(compact) % 4) % 4)
+          data = base64.b64decode(compact, validate=False)
+          if not data.startswith(b'\x89PNG\r\n\x1a\n'):
+              raise SystemExit('Atrangi brand source did not decode to a PNG')
+          pathlib.Path('docs/atrangi-brand-logo.png').write_bytes(data)
+          print(f'Materialized Atrangi PNG: {len(data)} bytes')
+          PY
           test -s docs/atrangi-brand-logo.png
 
       - name: Smoke check web package
@@ -51,6 +64,7 @@ jobs:
             docs/branding-v716.css \
             docs/sw.js \
             docs/manifest.webmanifest \
+            docs/atrangi-brand-logo.png \
             docs/app-00.txt \
             docs/app-01.txt \
             docs/app-02.txt \
@@ -62,7 +76,7 @@ jobs:
           done
           node --check docs/branding-v716.js
           node --check docs/sw.js
-          node -e "const fs=require('fs'); const v=JSON.parse(fs.readFileSync('docs/version.json','utf8')); if(v.webVersion!=='7.1.7') throw new Error('Expected webVersion 7.1.7, got '+v.webVersion); JSON.parse(fs.readFileSync('docs/manifest.webmanifest','utf8')); console.log('Atrangi web package smoke check passed for v'+v.webVersion);"
+          node -e "const fs=require('fs'); const v=JSON.parse(fs.readFileSync('docs/version.json','utf8')); if(v.webVersion!=='7.1.7') throw new Error('Expected webVersion 7.1.7, got '+v.webVersion); JSON.parse(fs.readFileSync('docs/manifest.webmanifest','utf8')); const p=fs.readFileSync('docs/atrangi-brand-logo.png'); if(p.length<1000||p[0]!==0x89||p.toString('ascii',1,4)!=='PNG') throw new Error('Invalid Atrangi PNG'); console.log('Atrangi web package smoke check passed for v'+v.webVersion);"
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
