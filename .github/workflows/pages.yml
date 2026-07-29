@@ -65,7 +65,8 @@ jobs:
           grep -q 'id="brandHomeBtn"' ci/rendered-dom.html
           grep -q 'id="themeToggleBtn"' ci/rendered-dom.html
           grep -q 'atrangi-brand-logo.svg' ci/rendered-dom.html
-          grep -q 'data-branding-test="PASS"' ci/rendered-dom.html
+          grep -q 'branding-v718.js' ci/rendered-dom.html
+          grep -q 'Atrangi Document Workspace v7.1.8' ci/rendered-dom.html
           ! grep -q '<span>A</span>' ci/rendered-dom.html
           python scripts/runtime-diagnostics.py --report ci/runtime-diagnostics.json --rendered-dom ci/rendered-dom.html
       - uses: actions/configure-pages@v5
