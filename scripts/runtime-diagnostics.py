@@ -6,6 +6,9 @@ import json
 import re
 from pathlib import Path
 
+VERSION = "7.1.8"
+RELEASE = "718"
+
 
 def decode_bundle(docs: Path) -> str:
     names = [f"app-{i:02d}.txt" for i in range(7)]
@@ -51,16 +54,20 @@ def static_report(docs: Path) -> dict:
 def rendered_report(dom: str) -> dict:
     return {
         "renderedDomBytes": len(dom.encode()),
-        "brandingScriptLoaded": "branding-v716.js" in dom,
-        "brandingCssLoaded": "branding-v716.css" in dom,
+        "brandingScriptLoaded": "branding-v718.js" in dom,
+        "brandingCssLoaded": "branding-v718.css" in dom,
+        "hardeningScriptLoaded": "hardening-v715.js" in dom,
+        "hardeningCssLoaded": "hardening-v715.css" in dom,
         "hasBrandImageClass": "atrangi-brand-image" in dom,
         "hasAtrangiLogoLive": "atrangi-logo-live" in dom,
-        "hasThemeToggle": 'id="themeToggleBtn"' in dom or 'id="atrangiFloatingTheme"' in dom,
+        "hasThemeToggle": 'id="themeToggleBtn"' in dom,
         "hasThemeDataset": bool(re.search(r"<html[^>]+data-theme=", dom, re.I)),
-        "hasVersionDataset": 'data-atrangi-version="7.1.7"' in dom,
+        "hasVersionDataset": f'data-atrangi-version="{VERSION}"' in dom,
+        "hasBrandReadyDataset": 'data-atrangi-brand-ready="true"' in dom,
         "hasHomeBinding": 'data-atrangi-home-bound="1"' in dom,
+        "usesDirectPng": f"atrangi-brand-logo.png?v={RELEASE}" in dom,
         "stillHasHeaderPlaceholder": bool(re.search(r'<div class="brand-logo[^>]*>\s*<span>A</span>', dom, re.I)),
-        "titleIs717": "<title>Atrangi Document Workspace v7.1.7</title>" in dom,
+        "titleIs718": f"<title>Atrangi Document Workspace v{VERSION}</title>" in dom,
         "bodyHasApp": 'id="app"' in dom,
     }
 
