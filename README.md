@@ -9,7 +9,7 @@ Website: `https://vaibhavshinde144.github.io/atrangi-document-workspace/`
 
 ## Current releases
 
-- Hosted workspace: `7.1.4`
+- Hosted workspace: `7.1.5`
 - Android wrapper: `7.1.2` (`versionCode 3`)
 
 ## Android
