@@ -1,6 +1,15 @@
+import java.util.Base64
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+}
+
+val atrangiLogoBase64 = rootProject.file("docs/atrangi-brand-logo.b64")
+val atrangiLogoPng = file("src/main/res/drawable-nodpi/atrangi_logo.png")
+if (atrangiLogoBase64.exists()) {
+    atrangiLogoPng.parentFile.mkdirs()
+    atrangiLogoPng.writeBytes(Base64.getMimeDecoder().decode(atrangiLogoBase64.readText().trim()))
 }
 
 android {
@@ -11,8 +20,8 @@ android {
         applicationId = "com.atrangi.documentworkspace"
         minSdk = 24
         targetSdk = 35
-        versionCode = 3
-        versionName = "7.1.2"
+        versionCode = 4
+        versionName = "7.1.6"
     }
 
     buildFeatures {
@@ -22,10 +31,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 
@@ -34,13 +40,12 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
-    packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
 }
 
 dependencies {
-    implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.appcompat:appcompat:1.7.0")
-    implementation("androidx.activity:activity-ktx:1.10.0")
+    implementation("androidx.activity:activity-ktx:1.9.3")
+    implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.webkit:webkit:1.12.1")
-    implementation("androidx.work:work-runtime-ktx:2.10.1")
+    implementation("androidx.work:work-runtime-ktx:2.10.0")
 }

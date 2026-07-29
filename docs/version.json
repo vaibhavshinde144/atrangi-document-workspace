@@ -1,8 +1,8 @@
 {
-  "webVersion": "7.1.5",
+  "webVersion": "7.1.6",
   "nativeVersionCode": 3,
   "nativeVersionName": "7.1.2",
   "mandatory": false,
-  "title": "Atrangi Document Workspace v7.1.5",
-  "notes": "Full UI and control hardening: verified runtime buttons, fields and options; fixed Research Pro setting duplication and scan-folder initialization; and aligned the Android workspace below the system status area while preserving responsive layouts."
+  "title": "Atrangi Document Workspace v7.1.6",
+  "notes": "Adds Atrangi Riders branding across the workspace, clickable logo/app-name Home navigation, persistent Light and Dark modes, PWA branding, and prepares the Android launcher icon asset."
 }

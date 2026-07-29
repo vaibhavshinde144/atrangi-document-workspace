@@ -10,9 +10,9 @@
 
     <application
         android:allowBackup="true"
-        android:icon="@drawable/ic_launcher_foreground"
+        android:icon="@drawable/atrangi_logo"
         android:label="Atrangi Document Workspace"
-        android:roundIcon="@drawable/ic_launcher_foreground"
+        android:roundIcon="@drawable/atrangi_logo"
         android:supportsRtl="true"
         android:theme="@style/Theme.AtrangiDocumentWorkspace"
         android:usesCleartextTraffic="false">

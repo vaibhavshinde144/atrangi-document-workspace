@@ -28,6 +28,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Materialize Atrangi brand image
+        run: base64 --decode docs/atrangi-brand-logo.b64 > docs/atrangi-brand-logo.png
       - name: Verify complete web package
         run: node scripts/verify-web-package.mjs
       - uses: actions/configure-pages@v5
