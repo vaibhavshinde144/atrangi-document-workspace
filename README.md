@@ -8,7 +8,7 @@ The production web app is published from `docs/` with GitHub Pages.
 Website: `https://vaibhavshinde144.github.io/atrangi-document-workspace/`
 
 ## Current releases
-- Hosted workspace candidate: `7.1.8` (deploys only after the validation gate passes on `main`)
+- Hosted workspace candidate: `7.1.8` (publishes only after the full validation gate passes)
 - Android source/build: `7.1.6` (`versionCode 4`)
 - Existing installed Android wrapper `7.1.2` can hot-update to the v7.1.8 hosted workspace without reinstalling because v7.1.8 changes only the hosted UI/runtime layer.
 
