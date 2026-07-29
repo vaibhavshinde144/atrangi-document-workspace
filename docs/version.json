@@ -1,8 +1,8 @@
 {
-  "webVersion": "7.1.8",
+  "webVersion": "7.1.9",
   "nativeVersionCode": 3,
   "nativeVersionName": "7.1.2",
   "mandatory": false,
-  "title": "Atrangi Document Workspace v7.1.8",
-  "notes": "Moves the Atrangi Riders logo, Home navigation and Light/Dark Mode into the packaged app; removes the A placeholder; adds direct mobile controls and rendered-browser validation."
+  "title": "Atrangi Document Workspace v7.1.9",
+  "notes": "Critical Android/WebView startup fix. The inline compressed bootstrap was removed from index.html and moved to a dedicated external loader so JavaScript can never appear as page text. Logo, Home navigation, Light/Dark Mode and all existing document functions are preserved and browser-tested."
 }
