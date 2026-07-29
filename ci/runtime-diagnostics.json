@@ -7,14 +7,5 @@
   "bootstrapInjectsLogo": true,
   "hasHomePanel": true,
   "hasDesktopNav": true,
-  "hasMobileNav": true,
-  "browserRuntime": {
-    "renderedDomBytes": 3762,
-    "hasBrandHome": true,
-    "hasThemeToggle": true,
-    "hasLogo": true,
-    "brandingTestPass": false,
-    "stillHasPlaceholder": true,
-    "titleIs718": true
-  }
+  "hasMobileNav": true
 }
