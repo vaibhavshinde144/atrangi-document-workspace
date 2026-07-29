@@ -12,7 +12,7 @@ on:
       - '.github/workflows/android-build.yml'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -43,28 +43,6 @@ jobs:
           name: Atrangi-Android-Build-Log
           path: android-build.log
           retention-days: 7
-      - name: Save failed build log to repository
-        if: failure()
-        shell: bash
-        run: |
-          mkdir -p ci
-          cp android-build.log ci/android-build-last.log
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ci/android-build-last.log
-          git commit -m "CI: save latest Android build failure log" || exit 0
-          git push
-      - name: Record successful build
-        if: success()
-        shell: bash
-        run: |
-          mkdir -p ci
-          printf '{\n  "status": "success",\n  "sourceCommit": "%s",\n  "workflowRun": "%s",\n  "builtAtUtc": "%s"\n}\n' "$GITHUB_SHA" "$GITHUB_RUN_ID" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > ci/android-build-status.json
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ci/android-build-status.json
-          git commit -m "CI: record successful Android build" || exit 0
-          git push
       - name: Upload installable APK
         if: success()
         uses: actions/upload-artifact@v4
@@ -72,3 +50,13 @@ jobs:
           name: Atrangi-Document-Workspace-Android
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
+      - name: Summarize Android build
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "### Atrangi Android build"
+            echo "- Commit: \`$GITHUB_SHA\`"
+            echo "- Gradle result: \`${{ steps.gradle_build.outcome }}\`"
+            echo "- APK artifact: \`Atrangi-Document-Workspace-Android\`"
+          } >> "$GITHUB_STEP_SUMMARY"
