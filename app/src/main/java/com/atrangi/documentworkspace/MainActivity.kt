@@ -531,22 +531,23 @@ class MainActivity : AppCompatActivity() {
         val uri = extractExternalDocumentUri(source) ?: return
         externalOpenInProgress = false
         Thread {
-            var cacheFile: File? = null
+            var cacheFileForCleanup: File? = null
             try {
                 val mimeType = source?.type?.takeIf { it.isNotBlank() }
                     ?: contentResolver.getType(uri)?.takeIf { it.isNotBlank() }
                     ?: "application/octet-stream"
                 val displayName = resolveExternalDisplayName(uri, mimeType)
                 val externalDir = File(cacheDir, "external-open").apply { mkdirs() }
-                cacheFile = File.createTempFile("atrangi-open-", cacheSuffix(displayName), externalDir)
+                val tempFile = File.createTempFile("atrangi-open-", cacheSuffix(displayName), externalDir)
+                cacheFileForCleanup = tempFile
                 val input = contentResolver.openInputStream(uri)
                     ?: throw IllegalStateException("The selected document is not readable.")
                 input.use { sourceStream ->
-                    cacheFile.outputStream().use { target -> sourceStream.copyTo(target) }
+                    tempFile.outputStream().use { target -> sourceStream.copyTo(target) }
                 }
                 val document = ExternalDocument(
                     id = UUID.randomUUID().toString(),
-                    cacheFile = cacheFile,
+                    cacheFile = tempFile,
                     displayName = displayName,
                     mimeType = mimeType
                 )
@@ -560,7 +561,7 @@ class MainActivity : AppCompatActivity() {
                     tryOpenPendingExternalDocument()
                 }
             } catch (error: Exception) {
-                cacheFile?.delete()
+                cacheFileForCleanup?.delete()
                 runOnUiThread {
                     Toast.makeText(
                         this,
