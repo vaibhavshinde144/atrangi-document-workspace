@@ -40,6 +40,7 @@ internal object UpdateManager {
     const val EXTRA_NATIVE_UPDATE = "atrangi.extra.NATIVE_UPDATE"
     const val EXTRA_APK_URL = "atrangi.extra.APK_URL"
 
+    private const val BASE_WEB_VERSION = "7.2.1"
     private const val PREFS = "atrangi_updates"
     private const val KEY_APPLIED_WEB_VERSION = "applied_web_version"
     private const val CHANNEL_ID = "atrangi_updates"
@@ -84,8 +85,8 @@ internal object UpdateManager {
 
     fun appliedWebVersion(context: Context): String =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getString(KEY_APPLIED_WEB_VERSION, BuildConfig.VERSION_NAME)
-            ?: BuildConfig.VERSION_NAME
+            .getString(KEY_APPLIED_WEB_VERSION, BASE_WEB_VERSION)
+            ?: BASE_WEB_VERSION
 
     fun markWebVersionApplied(context: Context, version: String) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -124,7 +125,7 @@ internal object UpdateManager {
             if (connection.responseCode !in 200..299) return null
             val json = JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
             RemoteUpdateInfo(
-                webVersion = json.optString("webVersion", BuildConfig.VERSION_NAME),
+                webVersion = json.optString("webVersion", BASE_WEB_VERSION),
                 nativeVersionCode = json.optInt("nativeVersionCode", BuildConfig.VERSION_CODE),
                 nativeVersionName = json.optString("nativeVersionName", BuildConfig.VERSION_NAME),
                 mandatory = json.optBoolean("mandatory", false),
@@ -162,14 +163,15 @@ internal object UpdateManager {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         val detail = if (hasNativeUpdate) {
-            "Atrangi ${info.nativeVersionName} is ready. Tap Update to download the Android package with the latest launcher icon and native features."
+            "Atrangi ${info.nativeVersionName} is ready. Tap Update to download the Android package with direct external document opening and the latest native features."
         } else {
             info.notes
         }
+        val versionLabel = if (hasNativeUpdate) info.nativeVersionName else info.webVersion
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(info.title)
-            .setContentText("Version ${info.webVersion} is ready")
+            .setContentText("Version $versionLabel is ready")
             .setStyle(NotificationCompat.BigTextStyle().bigText(detail))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(!info.mandatory)
