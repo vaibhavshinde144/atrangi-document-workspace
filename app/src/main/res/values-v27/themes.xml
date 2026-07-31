@@ -5,6 +5,7 @@
         <item name="colorAccent">@color/atrangi_accent</item>
         <item name="android:statusBarColor">@color/atrangi_primary_dark</item>
         <item name="android:navigationBarColor">@color/white</item>
+        <item name="android:windowLightNavigationBar">true</item>
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowBackground">@color/white</item>

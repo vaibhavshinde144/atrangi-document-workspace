@@ -13,6 +13,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
+import android.provider.OpenableColumns
 import android.util.Base64
 import android.view.Gravity
 import android.view.View
@@ -37,18 +38,31 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import org.json.JSONObject
 import java.io.File
+import java.io.RandomAccessFile
+import java.util.UUID
 
 class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private lateinit var rootView: FrameLayout
     private lateinit var splashView: View
     private var contentIsVisible = false
+    private var webContentReady = false
+    private var externalOpenInProgress = false
     private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
     private var pendingPermissionRequest: PermissionRequest? = null
     private var pendingCameraIntent: Intent? = null
     private var pendingCameraUri: Uri? = null
     private var pendingAppliedWebVersion: String? = null
+    @Volatile private var pendingExternalDocument: ExternalDocument? = null
+
+    private data class ExternalDocument(
+        val id: String,
+        val cacheFile: File,
+        val displayName: String,
+        val mimeType: String
+    )
 
     private val filePicker = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -128,11 +142,11 @@ class MainActivity : AppCompatActivity() {
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
 
-        if (savedInstanceState == null) {
-            applyLaunchIntent(intent)
-        } else {
+        if (savedInstanceState != null) {
             webView.restoreState(savedInstanceState)
+            webContentReady = true
         }
+        applyLaunchIntent(intent)
         webView.postDelayed({ revealContent() }, CONTENT_READY_FALLBACK_MS * 2)
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -340,7 +354,65 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun contentReady() {
-            runOnUiThread { revealContent() }
+            runOnUiThread {
+                webContentReady = true
+                revealContent()
+                tryOpenPendingExternalDocument()
+            }
+        }
+
+        @JavascriptInterface
+        fun externalDocumentInfo(): String {
+            val document = pendingExternalDocument ?: return ""
+            return JSONObject()
+                .put("id", document.id)
+                .put("name", document.displayName)
+                .put("mime", document.mimeType)
+                .put("size", document.cacheFile.length())
+                .toString()
+        }
+
+        @JavascriptInterface
+        fun readExternalDocumentChunk(documentId: String, offset: Int, requestedLength: Int): String {
+            val document = pendingExternalDocument ?: return ""
+            if (document.id != documentId || offset < 0 || requestedLength <= 0) return ""
+            val remaining = document.cacheFile.length() - offset.toLong()
+            if (remaining <= 0L) return ""
+            val length = minOf(requestedLength, EXTERNAL_CHUNK_BYTES, remaining.coerceAtMost(Int.MAX_VALUE.toLong()).toInt())
+            return try {
+                RandomAccessFile(document.cacheFile, "r").use { file ->
+                    file.seek(offset.toLong())
+                    val buffer = ByteArray(length)
+                    val read = file.read(buffer)
+                    if (read <= 0) "" else Base64.encodeToString(buffer, 0, read, Base64.NO_WRAP)
+                }
+            } catch (_: Exception) {
+                ""
+            }
+        }
+
+        @JavascriptInterface
+        fun markExternalDocumentConsumed(documentId: String) {
+            runOnUiThread {
+                val document = pendingExternalDocument
+                if (document?.id == documentId) {
+                    pendingExternalDocument = null
+                    externalOpenInProgress = false
+                    document.cacheFile.delete()
+                }
+            }
+        }
+
+        @JavascriptInterface
+        fun externalDocumentFailed(documentId: String, message: String) {
+            runOnUiThread {
+                if (pendingExternalDocument?.id == documentId) externalOpenInProgress = false
+                Toast.makeText(
+                    this@MainActivity,
+                    message.ifBlank { "Unable to open this document in Atrangi." },
+                    Toast.LENGTH_LONG
+                ).show()
+            }
         }
 
         @JavascriptInterface
@@ -424,8 +496,116 @@ class MainActivity : AppCompatActivity() {
             pendingAppliedWebVersion = version
             webView.clearCache(true)
         }
-        val cacheBust = if (shouldApply) "&wv=${Uri.encode(version)}&update=${System.currentTimeMillis()}" else ""
-        webView.loadUrl(APP_URL + cacheBust)
+
+        val hasExternalDocument = extractExternalDocumentUri(source) != null
+        if (hasExternalDocument) prepareExternalDocument(source)
+
+        val shouldLoadWorkspace = shouldApply || webView.url.isNullOrBlank()
+        if (shouldLoadWorkspace) {
+            webContentReady = false
+            val cacheBust = if (shouldApply) "&wv=${Uri.encode(version)}&update=${System.currentTimeMillis()}" else ""
+            webView.loadUrl(APP_URL + cacheBust)
+        } else if (hasExternalDocument) {
+            tryOpenPendingExternalDocument()
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun extractExternalDocumentUri(source: Intent?): Uri? {
+        if (source == null) return null
+        return when (source.action) {
+            Intent.ACTION_VIEW -> source.data
+            Intent.ACTION_SEND -> {
+                val stream = if (Build.VERSION.SDK_INT >= 33) {
+                    source.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+                } else {
+                    source.getParcelableExtra(Intent.EXTRA_STREAM)
+                }
+                stream ?: source.clipData?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.uri
+            }
+            else -> null
+        }
+    }
+
+    private fun prepareExternalDocument(source: Intent?) {
+        val uri = extractExternalDocumentUri(source) ?: return
+        externalOpenInProgress = false
+        Thread {
+            var cacheFileForCleanup: File? = null
+            try {
+                val mimeType = source?.type?.takeIf { it.isNotBlank() }
+                    ?: contentResolver.getType(uri)?.takeIf { it.isNotBlank() }
+                    ?: "application/octet-stream"
+                val displayName = resolveExternalDisplayName(uri, mimeType)
+                val externalDir = File(cacheDir, "external-open").apply { mkdirs() }
+                val tempFile = File.createTempFile("atrangi-open-", cacheSuffix(displayName), externalDir)
+                cacheFileForCleanup = tempFile
+                val input = contentResolver.openInputStream(uri)
+                    ?: throw IllegalStateException("The selected document is not readable.")
+                input.use { sourceStream ->
+                    tempFile.outputStream().use { target -> sourceStream.copyTo(target) }
+                }
+                val document = ExternalDocument(
+                    id = UUID.randomUUID().toString(),
+                    cacheFile = tempFile,
+                    displayName = displayName,
+                    mimeType = mimeType
+                )
+                runOnUiThread {
+                    if (isFinishing || isDestroyed) {
+                        document.cacheFile.delete()
+                        return@runOnUiThread
+                    }
+                    pendingExternalDocument?.cacheFile?.delete()
+                    pendingExternalDocument = document
+                    tryOpenPendingExternalDocument()
+                }
+            } catch (error: Exception) {
+                cacheFileForCleanup?.delete()
+                runOnUiThread {
+                    Toast.makeText(
+                        this,
+                        "Unable to read document: ${error.message ?: "Unknown error"}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }.start()
+    }
+
+    private fun resolveExternalDisplayName(uri: Uri, mimeType: String): String {
+        var name: String? = null
+        if (uri.scheme.equals("content", ignoreCase = true)) {
+            try {
+                contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                        if (index >= 0) name = cursor.getString(index)
+                    }
+                }
+            } catch (_: Exception) {
+            }
+        }
+        if (name.isNullOrBlank()) name = uri.lastPathSegment?.substringAfterLast('/')
+        if (name.isNullOrBlank()) name = if (mimeType.equals("application/pdf", ignoreCase = true)) "Document.pdf" else "Document"
+        return name!!
+            .replace(Regex("[\\/\r\n]"), "_")
+            .trim()
+            .take(180)
+            .ifBlank { "Document" }
+    }
+
+    private fun cacheSuffix(displayName: String): String {
+        val extension = displayName.substringAfterLast('.', "")
+            .replace(Regex("[^A-Za-z0-9]"), "")
+            .take(10)
+        return if (extension.isBlank()) ".bin" else ".$extension"
+    }
+
+    private fun tryOpenPendingExternalDocument() {
+        if (!webContentReady || externalOpenInProgress || pendingExternalDocument == null || !::webView.isInitialized) return
+        externalOpenInProgress = true
+        webView.evaluateJavascript(EXTERNAL_DOCUMENT_OPEN_SCRIPT, null)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -446,6 +626,8 @@ class MainActivity : AppCompatActivity() {
         pendingPermissionRequest = null
         pendingCameraIntent = null
         pendingCameraUri = null
+        pendingExternalDocument?.cacheFile?.delete()
+        pendingExternalDocument = null
         webView.removeJavascriptInterface("AtrangiNative")
         webView.destroy()
         super.onDestroy()
@@ -457,5 +639,63 @@ class MainActivity : AppCompatActivity() {
         private const val INSTALL_URL = "https://vaibhavshinde144.github.io/atrangi-document-workspace/downloads/Atrangi-Document-Workspace.apk"
         private const val CONTENT_READY_FALLBACK_MS = 1600L
         private const val MAX_SHARE_BASE64_CHARS = 32_000_000
+        private const val EXTERNAL_CHUNK_BYTES = 256 * 1024
+        private val EXTERNAL_DOCUMENT_OPEN_SCRIPT = """
+            (function waitForAtrangiExternalOpen(attempt){
+              const nativeBridge=window.AtrangiNative;
+              const workspace=window.AtrangiWorkspaceV7;
+              const core=window.AtrangiWorkspaceCore;
+              if(!nativeBridge||!workspace||!core){
+                if(attempt<100){setTimeout(()=>waitForAtrangiExternalOpen(attempt+1),100);return;}
+                if(nativeBridge)nativeBridge.externalDocumentFailed('', 'Atrangi document viewer did not become ready.');
+                return;
+              }
+              (async()=>{
+                let info=null;
+                try{
+                  const raw=nativeBridge.externalDocumentInfo();
+                  if(!raw)throw new Error('External document is no longer available.');
+                  info=JSON.parse(raw);
+                  const size=Number(info.size||0);
+                  const parts=[];
+                  let offset=0;
+                  const chunkSize=256*1024;
+                  while(offset<size){
+                    const requested=Math.min(chunkSize,size-offset);
+                    const encoded=nativeBridge.readExternalDocumentChunk(info.id,offset,requested);
+                    if(!encoded)throw new Error('Unable to read the external document.');
+                    const binary=atob(encoded);
+                    const bytes=new Uint8Array(binary.length);
+                    for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+                    parts.push(bytes);
+                    offset+=bytes.length;
+                  }
+                  const file=new File(parts,info.name||'Document',{type:info.mime||'application/octet-stream',lastModified:Date.now()});
+                  const family=await core.detectWithSignature(file);
+                  const now=Date.now();
+                  const asset={
+                    id:'external:'+info.id,
+                    name:file.name,
+                    mime:file.type||info.mime||'application/octet-stream',
+                    size:file.size,
+                    family,
+                    createdAt:now,
+                    modifiedAt:now,
+                    versionNo:1,
+                    starred:false,
+                    tags:[],
+                    blob:file,
+                    previewStatus:'ready'
+                  };
+                  asset.capability=core.capability(asset);
+                  if(window.AtrangiScannerApp?.switchTab)window.AtrangiScannerApp.switchTab('files');
+                  await workspace.openAsset(asset);
+                  nativeBridge.markExternalDocumentConsumed(info.id);
+                }catch(error){
+                  nativeBridge.externalDocumentFailed(info?.id||'',error?.message||String(error||'Unable to open document.'));
+                }
+              })();
+            })(0);
+        """.trimIndent()
     }
 }
