@@ -36,9 +36,9 @@ assert.equal(crypto.createHash('sha256').update(logo).digest('hex'),expectedLogo
 assert.ok(logo.subarray(0,8).equals(Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a])),'web logo must be a PNG');
 
 const version=JSON.parse(fs.readFileSync(path.join(docs,'version.json'),'utf8'));
-assert.equal(version.webVersion,'7.2.1','version.json must be v7.2.1');
-assert.equal(version.nativeVersionCode,6,'native version code must be 6');
-assert.equal(version.nativeVersionName,'7.2.1','native version name must be v7.2.1');
+assert.equal(version.webVersion,'7.2.1','version.json hosted web version must stay v7.2.1');
+assert.equal(version.nativeVersionCode,7,'native version code must be 7');
+assert.equal(version.nativeVersionName,'7.2.2','native version name must be v7.2.2');
 assert.equal(version.apkUrl,'https://vaibhavshinde144.github.io/atrangi-document-workspace/downloads/Atrangi-Document-Workspace.apk','stable APK URL mismatch');
 
 const branding=fs.readFileSync(path.join(docs,'branding-v721.js'),'utf8');
@@ -51,7 +51,7 @@ for(const token of ['SIMPLE PASSPORT PHOTO','Capture','Background','Brightness',
 assert.ok((passport.match(/\{label:/g)||[]).length>=6,'simple passport workflow must provide at least six common sizes');
 
 const workspace=fs.readFileSync(path.join(docs,'workspace-v7.js'),'utf8');
-for(const token of ['AtrangiNative?.shareFile','navigator.canShare','Direct sharing is unavailable here'])assert.ok(workspace.includes(token),`workspace sharing missing ${token}`);
+for(const token of ['AtrangiNative?.shareFile','navigator.canShare','Direct sharing is unavailable here','window.AtrangiWorkspaceV7={load,importFiles,openAsset'])assert.ok(workspace.includes(token),`workspace sharing/viewer contract missing ${token}`);
 
 const sw=fs.readFileSync(path.join(docs,'sw.js'),'utf8');
 assert.doesNotThrow(()=>new Function(sw),'service worker JS must parse');
@@ -59,15 +59,19 @@ assert.match(sw,/atrangi-document-workspace-v7\.2\.1/,'service worker cache must
 for(const asset of ['bootstrap-v721.js','branding-v721.js','branding-v721.css','passport-simple-v721.js','passport-simple-v721.css','atrangi-brand-logo.png'])assert.ok(sw.includes(asset),`service worker missing ${asset}`);
 
 const gradle=fs.readFileSync(path.join(root,'app/build.gradle.kts'),'utf8');
-assert.match(gradle,/versionCode\s*=\s*6/,'Android versionCode must be 6');
-assert.match(gradle,/versionName\s*=\s*"7\.2\.1"/,'Android versionName must be 7.2.1');
+assert.match(gradle,/versionCode\s*=\s*7/,'Android versionCode must be 7');
+assert.match(gradle,/versionName\s*=\s*"7\.2\.2"/,'Android versionName must be 7.2.2');
 assert.ok(!gradle.includes('atrangi-brand-logo.b64'),'Android build must use the exact tracked PNG directly');
 const androidLogo=fs.readFileSync(path.join(root,'app/src/main/res/drawable-nodpi/atrangi_riders_logo.png'));
 assert.equal(crypto.createHash('sha256').update(androidLogo).digest('hex'),expectedLogoSha256,'Android logo must be byte-identical to the supplied circular logo');
 const manifest=fs.readFileSync(path.join(root,'app/src/main/AndroidManifest.xml'),'utf8');
 assert.match(manifest,/android:icon="@mipmap\/ic_launcher"/,'Android launcher icon must use the adaptive launcher resource');
 assert.match(manifest,/android:roundIcon="@mipmap\/ic_launcher_round"/,'Android round icon must use the adaptive launcher resource');
+assert.match(manifest,/android:launchMode="singleTop"/,'MainActivity must reuse the foreground instance for external documents');
+for(const token of ['android.intent.action.VIEW','android.intent.action.SEND','android:scheme="content"','android:mimeType="*/*"'])assert.ok(manifest.includes(token),`Android external document intent contract missing ${token}`);
 const main=fs.readFileSync(path.join(root,'app/src/main/java/com/atrangi/documentworkspace/MainActivity.kt'),'utf8');
-for(const token of ['AtrangiNativeBridge','addJavascriptInterface','shareInstallLink','shareFile(','copyInstallUrl','contentReady','createCameraCaptureIntent','MediaStore.ACTION_IMAGE_CAPTURE','loadWithOverviewMode = false','useWideViewPort = false','setInitialScale(100)','Atrangi-Document-Workspace.apk','?app=7.2.1'])assert.ok(main.includes(token),`native Android contract missing ${token}`);
+for(const token of ['AtrangiNativeBridge','addJavascriptInterface','shareInstallLink','shareFile(','copyInstallUrl','contentReady','createCameraCaptureIntent','MediaStore.ACTION_IMAGE_CAPTURE','loadWithOverviewMode = false','useWideViewPort = false','setInitialScale(100)','Atrangi-Document-Workspace.apk','?app=7.2.1','extractExternalDocumentUri','prepareExternalDocument','externalDocumentInfo','readExternalDocumentChunk','markExternalDocumentConsumed','externalDocumentFailed','EXTERNAL_DOCUMENT_OPEN_SCRIPT','AtrangiWorkspaceV7','AtrangiWorkspaceCore','openAsset(asset)','EXTERNAL_CHUNK_BYTES'])assert.ok(main.includes(token),`native Android contract missing ${token}`);
+const updateManager=fs.readFileSync(path.join(root,'app/src/main/java/com/atrangi/documentworkspace/UpdateManager.kt'),'utf8');
+for(const token of ['BASE_WEB_VERSION = "7.2.1"','getString(KEY_APPLIED_WEB_VERSION, BASE_WEB_VERSION)','val versionLabel = if (hasNativeUpdate) info.nativeVersionName else info.webVersion'])assert.ok(updateManager.includes(token),`update version separation missing ${token}`);
 
-console.log(`Verified v7.2.1 package: ${chunks.length} chunks, ${new Set(local).size} bundled assets, exact logo, simple passport workflow, stable startup and native sharing.`);
+console.log(`Verified web v7.2.1 + Android v7.2.2 package: ${chunks.length} chunks, ${new Set(local).size} bundled assets, exact logo, simple passport workflow, stable startup, native sharing and direct external document opening.`);
