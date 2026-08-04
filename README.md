@@ -23,6 +23,7 @@ Web features hot-update through the hosted workspace. Native Android features su
 - Opens PDFs received through Android **Open with** and **Share** directly in a native, ad-free, completely offline viewer.
 - Renders PDF pages with Android `PdfRenderer`, including portrait/landscape pages, fit-to-width display, page position and direct sharing.
 - Publishes updater metadata and versioned APK filenames from `docs/version.json`, preventing release versions from drifting out of sync.
+- Replaces per-run debug signing with a protected, stable release certificate. Existing v7.2.2-or-older GitHub APK installs must be uninstalled once before installing v7.2.3; later signed releases can update in place.
 
 ## v7.2.2 external document update
 
@@ -53,7 +54,7 @@ Web features hot-update through the hosted workspace. Native Android features su
 - Hosted workspace loaded by the wrapper: `7.2.1`
 - Minimum Android: 7.0 (API 24)
 
-GitHub Actions builds an installable debug APK, validates it and publishes it to the stable APK URL above.
+GitHub Actions builds a signed release APK, validates its signature and publishes it to the stable APK URL above. The dedicated signing key is supplied only through repository secrets so subsequent releases retain the same Android identity and can update the installed app.
 
 ## Automatic update engine
 

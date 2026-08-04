@@ -3,6 +3,22 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+val atrangiKeystorePath = providers.environmentVariable("ATRANGI_KEYSTORE_PATH").orNull
+val atrangiKeystorePassword = providers.environmentVariable("ATRANGI_KEYSTORE_PASSWORD").orNull
+val atrangiKeyAlias = providers.environmentVariable("ATRANGI_KEY_ALIAS").orNull
+val atrangiKeyPassword = providers.environmentVariable("ATRANGI_KEY_PASSWORD").orNull
+val atrangiSigningValues = listOf(
+    atrangiKeystorePath,
+    atrangiKeystorePassword,
+    atrangiKeyAlias,
+    atrangiKeyPassword
+)
+val hasAtrangiSigning = atrangiSigningValues.all { !it.isNullOrBlank() }
+
+if (atrangiSigningValues.any { !it.isNullOrBlank() } && !hasAtrangiSigning) {
+    throw GradleException("Atrangi release signing configuration is incomplete")
+}
+
 android {
     namespace = "com.atrangi.documentworkspace"
     compileSdk = 35
@@ -19,9 +35,25 @@ android {
         buildConfig = true
     }
 
+    signingConfigs {
+        if (hasAtrangiSigning) {
+            create("atrangiRelease") {
+                storeFile = file(atrangiKeystorePath!!)
+                storePassword = atrangiKeystorePassword
+                keyAlias = atrangiKeyAlias
+                keyPassword = atrangiKeyPassword
+                enableV1Signing = true
+                enableV2Signing = true
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            if (hasAtrangiSigning) {
+                signingConfig = signingConfigs.getByName("atrangiRelease")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

@@ -62,7 +62,13 @@ const gradle=fs.readFileSync(path.join(root,'app/build.gradle.kts'),'utf8');
 assert.match(gradle,/versionCode\s*=\s*8/,'Android versionCode must be 8');
 assert.match(gradle,/versionName\s*=\s*"7\.2\.3"/,'Android versionName must be 7.2.3');
 assert.match(gradle,/androidx\.recyclerview:recyclerview/,'offline PDF viewer must include RecyclerView');
+for(const token of ['ATRANGI_KEYSTORE_PATH','ATRANGI_KEYSTORE_PASSWORD','ATRANGI_KEY_ALIAS','ATRANGI_KEY_PASSWORD','atrangiRelease'])assert.ok(gradle.includes(token),`stable Android signing contract missing ${token}`);
 assert.ok(!gradle.includes('atrangi-brand-logo.b64'),'Android build must use the exact tracked PNG directly');
+for(const workflowPath of ['.github/workflows/pages.yml','.github/workflows/android-build.yml']){
+  const workflow=fs.readFileSync(path.join(root,workflowPath),'utf8');
+  for(const token of ['secrets.ATRANGI_SIGNING_KEY_BASE64','secrets.ATRANGI_KEYSTORE_PASSWORD','secrets.ATRANGI_KEY_ALIAS','secrets.ATRANGI_KEY_PASSWORD',':app:assembleRelease','app/build/outputs/apk/release/app-release.apk','apksigner'])assert.ok(workflow.includes(token),`${workflowPath} stable release workflow missing ${token}`);
+  assert.ok(!workflow.includes(':app:assembleDebug'),`${workflowPath} must not publish a per-run debug-signed APK`);
+}
 const androidLogo=fs.readFileSync(path.join(root,'app/src/main/res/drawable-nodpi/atrangi_riders_logo.png'));
 assert.equal(crypto.createHash('sha256').update(androidLogo).digest('hex'),expectedLogoSha256,'Android logo must be byte-identical to the supplied circular logo');
 const manifest=fs.readFileSync(path.join(root,'app/src/main/AndroidManifest.xml'),'utf8');
