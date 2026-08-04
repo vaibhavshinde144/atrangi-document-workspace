@@ -89,7 +89,7 @@ jobs:
           sleep 2
           python scripts/browser-acceptance.py http://127.0.0.1:8123/
 
-      - name: Build Android v7.2.2 APK
+      - name: Build Android APK
         shell: bash
         run: |
           set -euo pipefail
@@ -105,16 +105,18 @@ jobs:
           set -euo pipefail
           APK=app/build/outputs/apk/debug/app-debug.apk
           mkdir -p docs/downloads
+          VERSION_NAME="$(python -c "import json; print(json.load(open('docs/version.json'))['nativeVersionName'])")"
           cp "$APK" docs/downloads/Atrangi-Document-Workspace.apk
-          cp "$APK" docs/downloads/Atrangi-Document-Workspace-v7.2.2.apk
+          cp "$APK" "docs/downloads/Atrangi-Document-Workspace-v${VERSION_NAME}.apk"
           sha256sum docs/downloads/Atrangi-Document-Workspace.apk | awk '{print $1}' > docs/downloads/Atrangi-Document-Workspace.sha256
           python - <<'PY'
           import hashlib,json
           from pathlib import Path
           p=Path('docs/downloads/Atrangi-Document-Workspace.apk')
+          release=json.loads(Path('docs/version.json').read_text())
           result={
-            'version':'7.2.2',
-            'versionCode':7,
+            'version':release['nativeVersionName'],
+            'versionCode':release['nativeVersionCode'],
             'apkUrl':'https://vaibhavshinde144.github.io/atrangi-document-workspace/downloads/Atrangi-Document-Workspace.apk',
             'bytes':p.stat().st_size,
             'sha256':hashlib.sha256(p.read_bytes()).hexdigest()
@@ -140,7 +142,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: atrangi-v722-validation
+          name: atrangi-validation
           path: |
             ci/
             app/build/outputs/apk/debug/app-debug.apk
@@ -164,15 +166,16 @@ jobs:
           python - <<'PY'
           import json,os
           from pathlib import Path
+          release=json.loads(Path('docs/version.json').read_text())
           result={
             'status':os.environ.get('DEPLOY_STATUS','unknown'),
             'sourceCommit':os.environ.get('SOURCE_COMMIT',''),
             'workflowRun':os.environ.get('RUN_ID',''),
             'deployedUrl':os.environ.get('DEPLOYED_URL',''),
-            'webVersion':'7.2.1',
-            'nativeVersionCode':7,
-            'nativeVersionName':'7.2.2',
-            'deliveryMode':'external-bootstrap+startup-gate+simple-passport+native-sharing+direct-external-document-viewer+public-apk',
+            'webVersion':release['webVersion'],
+            'nativeVersionCode':release['nativeVersionCode'],
+            'nativeVersionName':release['nativeVersionName'],
+            'deliveryMode':'external-bootstrap+startup-gate+simple-passport+native-sharing+native-offline-pdf-viewer+responsive-safe-area+public-apk',
             'apkUrl':'https://vaibhavshinde144.github.io/atrangi-document-workspace/downloads/Atrangi-Document-Workspace.apk',
             'recordedAtUtc':os.environ.get('RECORDED_AT_UTC','')
           }
@@ -183,6 +186,7 @@ jobs:
           git add ci/pages-deploy-status.json
           test ! -f ci/runtime-diagnostics.json || git add ci/runtime-diagnostics.json
           test ! -f ci/browser-acceptance.json || git add ci/browser-acceptance.json
-          git commit -m 'CI: record v7.2.2 external-document viewer acceptance result' || exit 0
+          VERSION_NAME="$(python -c "import json; print(json.load(open('docs/version.json'))['nativeVersionName'])")"
+          git commit -m "CI: record v${VERSION_NAME} validation and deployment result" || exit 0
           git pull --rebase origin main
           git push origin HEAD:main
