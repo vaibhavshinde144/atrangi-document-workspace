@@ -57,7 +57,10 @@ def runtime_suite():
         wait(d,"document.getElementById('app')")
         wait(d,"document.body && document.body.dataset.brandingTest==='PASS'",16)
         record('runtime app and branding initialized',True)
-        record('browser title v7.2.1',d.title=='Atrangi Document Workspace v7.2.1',d.title)
+        expected_title='Atrangi Document Workspace v7.2.1'
+        WebDriverWait(d,5).until(lambda x:x.title==expected_title)
+        browser_title=d.title
+        record('browser title v7.2.1',browser_title==expected_title,browser_title)
         version=d.execute_script("return document.documentElement.dataset.atrangiVersion||''")
         record('runtime version marker',version=='7.2.1',version)
         labels=d.execute_script("return {chip:document.querySelector('.version-chip')?.textContent||'',drawer:document.querySelector('.drawer-head small')?.textContent||'',hero:document.querySelector('.hero-badge-row .eyebrow')?.textContent||''}")
