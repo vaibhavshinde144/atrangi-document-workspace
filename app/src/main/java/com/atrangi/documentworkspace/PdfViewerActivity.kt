@@ -256,7 +256,11 @@ class PdfViewerActivity : AppCompatActivity() {
                 }
             } catch (error: Exception) {
                 runCatching { localDescriptor?.close() }
-                runOnUiThread { showError(error.message ?: "This PDF could not be opened.") }
+                runOnUiThread {
+                    if (!isFinishing && !isDestroyed) {
+                        showError(error.message ?: "This PDF could not be opened.")
+                    }
+                }
             }
         }
     }
@@ -448,6 +452,8 @@ class PdfViewerActivity : AppCompatActivity() {
 
         fun createIntent(context: Context, uri: Uri, displayName: String): Intent =
             Intent(context, PdfViewerActivity::class.java).apply {
+                data = uri
+                type = "application/pdf"
                 putExtra(EXTRA_URI, uri.toString())
                 putExtra(EXTRA_NAME, displayName)
             }
