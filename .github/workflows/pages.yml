@@ -49,6 +49,28 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Configure stable Android signing
+        shell: bash
+        env:
+          SIGNING_KEY_BASE64: ${{ secrets.ATRANGI_SIGNING_KEY_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ATRANGI_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ATRANGI_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ATRANGI_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$SIGNING_KEY_BASE64"
+          test -n "$KEYSTORE_PASSWORD"
+          test -n "$KEY_ALIAS"
+          test -n "$KEY_PASSWORD"
+          KEYSTORE_PATH="$RUNNER_TEMP/atrangi-release.jks"
+          printf '%s' "$SIGNING_KEY_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+          chmod 600 "$KEYSTORE_PATH"
+          keytool -list -keystore "$KEYSTORE_PATH" -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" >/dev/null
+          echo "ATRANGI_KEYSTORE_PATH=$KEYSTORE_PATH" >> "$GITHUB_ENV"
+          echo "ATRANGI_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "ATRANGI_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "ATRANGI_KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
+
       - name: Validate exact deployable package
         shell: bash
         run: |
@@ -93,17 +115,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          gradle :app:assembleDebug --no-daemon --stacktrace
-          APK=app/build/outputs/apk/debug/app-debug.apk
+          gradle :app:assembleRelease --no-daemon --stacktrace
+          APK=app/build/outputs/apk/release/app-release.apk
           test -s "$APK"
           unzip -t "$APK" >/dev/null
           unzip -l "$APK" | grep -q 'atrangi_riders_logo' || { echo 'Exact Atrangi Riders logo resource missing from APK'; exit 1; }
+          APKSIGNER="$(find "${ANDROID_HOME:?}/build-tools" -type f -name apksigner | sort -V | tail -1)"
+          test -x "$APKSIGNER"
+          "$APKSIGNER" verify --verbose --print-certs "$APK"
 
       - name: Prepare public install package
         shell: bash
         run: |
           set -euo pipefail
-          APK=app/build/outputs/apk/debug/app-debug.apk
+          APK=app/build/outputs/apk/release/app-release.apk
           mkdir -p docs/downloads
           VERSION_NAME="$(python -c "import json; print(json.load(open('docs/version.json'))['nativeVersionName'])")"
           cp "$APK" docs/downloads/Atrangi-Document-Workspace.apk
@@ -145,7 +170,7 @@ jobs:
           name: atrangi-validation
           path: |
             ci/
-            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/release/app-release.apk
             docs/downloads/latest.json
             docs/downloads/Atrangi-Document-Workspace.sha256
           if-no-files-found: ignore

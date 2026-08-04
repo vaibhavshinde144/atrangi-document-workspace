@@ -27,15 +27,45 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Build debug APK with diagnostics
+      - name: Configure stable Android signing
+        shell: bash
+        env:
+          SIGNING_KEY_BASE64: ${{ secrets.ATRANGI_SIGNING_KEY_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ATRANGI_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ATRANGI_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ATRANGI_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$SIGNING_KEY_BASE64"
+          test -n "$KEYSTORE_PASSWORD"
+          test -n "$KEY_ALIAS"
+          test -n "$KEY_PASSWORD"
+          KEYSTORE_PATH="$RUNNER_TEMP/atrangi-release.jks"
+          printf '%s' "$SIGNING_KEY_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+          chmod 600 "$KEYSTORE_PATH"
+          keytool -list -keystore "$KEYSTORE_PATH" -storepass "$KEYSTORE_PASSWORD" -alias "$KEY_ALIAS" >/dev/null
+          echo "ATRANGI_KEYSTORE_PATH=$KEYSTORE_PATH" >> "$GITHUB_ENV"
+          echo "ATRANGI_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "ATRANGI_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "ATRANGI_KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
+      - name: Build signed release APK with diagnostics
         id: gradle_build
         shell: bash
         run: |
           set +e
-          gradle :app:assembleDebug --stacktrace --info 2>&1 | tee android-build.log
+          gradle :app:assembleRelease --stacktrace --info 2>&1 | tee android-build.log
           code=${PIPESTATUS[0]}
           echo "exit_code=$code" >> "$GITHUB_OUTPUT"
           exit $code
+      - name: Verify APK signature
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/release/app-release.apk
+          APKSIGNER="$(find "${ANDROID_HOME:?}/build-tools" -type f -name apksigner | sort -V | tail -1)"
+          test -x "$APKSIGNER"
+          "$APKSIGNER" verify --verbose --print-certs "$APK"
       - name: Upload build log
         if: always()
         uses: actions/upload-artifact@v4
@@ -48,14 +78,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Atrangi-Document-Workspace-Android
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/release/app-release.apk
           retention-days: 30
       - name: Summarize Android build
         if: always()
         shell: bash
         run: |
           {
-            echo "### Atrangi Android build"
+            echo "### Atrangi signed Android release build"
             echo "- Commit: \`$GITHUB_SHA\`"
             echo "- Gradle result: \`${{ steps.gradle_build.outcome }}\`"
             echo "- APK artifact: \`Atrangi-Document-Workspace-Android\`"
