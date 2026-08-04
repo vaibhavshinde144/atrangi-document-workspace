@@ -1,9 +1,9 @@
 {
   "webVersion": "7.2.1",
-  "nativeVersionCode": 8,
-  "nativeVersionName": "7.2.3",
+  "nativeVersionCode": 9,
+  "nativeVersionName": "7.2.4",
   "mandatory": false,
-  "title": "Atrangi Document Workspace v7.2.3",
-  "notes": "Adds a completely offline native Android PDF viewer for files opened or shared from other apps. External PDFs now bypass the WebView, blob downloads and online PDF libraries, render immediately with Android PdfRenderer, and include an ad-free fit-to-width viewer and direct share action. Mobile WebView scaling and status/navigation bar safe areas are also corrected. The public APK now uses a stable release certificate so future versions can update the installed app in place after this one-time v7.2.3 reinstall.",
+  "title": "Atrangi Document Workspace v7.2.4",
+  "notes": "Fixes the crash that occurred immediately after choosing an external PDF. The Android launcher activity can now finish safely before its WebView is created, while the selected PDF is transferred to the native offline viewer with its read permission intact. PDF read failures are handled inside the viewer instead of terminating the app. Includes the responsive safe-area UI, direct sharing and stable release signing from v7.2.3.",
   "apkUrl": "https://vaibhavshinde144.github.io/atrangi-document-workspace/downloads/Atrangi-Document-Workspace.apk"
 }

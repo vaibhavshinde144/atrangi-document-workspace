@@ -710,8 +710,10 @@ class MainActivity : AppCompatActivity() {
         pendingCameraUri = null
         pendingExternalDocument?.cacheFile?.delete()
         pendingExternalDocument = null
-        webView.removeJavascriptInterface("AtrangiNative")
-        webView.destroy()
+        if (::webView.isInitialized) {
+            webView.removeJavascriptInterface("AtrangiNative")
+            webView.destroy()
+        }
         super.onDestroy()
     }
 

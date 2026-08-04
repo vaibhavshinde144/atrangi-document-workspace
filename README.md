@@ -11,10 +11,16 @@ Website: `https://vaibhavshinde144.github.io/atrangi-document-workspace/`
 ## Current release
 
 - Hosted workspace: `7.2.1`
-- Android source/build: `7.2.3` (`versionCode 8`)
+- Android source/build: `7.2.4` (`versionCode 9`)
 - Stable APK: `https://vaibhavshinde144.github.io/atrangi-document-workspace/downloads/Atrangi-Document-Workspace.apk`
 
 Web features hot-update through the hosted workspace. Native Android features such as launcher resources, camera/share bridges and external **Open with Atrangi** handling require installing the latest APK.
+
+## v7.2.4 external PDF crash fix
+
+- Prevents the launcher activity from touching an uninitialized WebView when it finishes after routing an external PDF to the native viewer.
+- Preserves the incoming Android read grant on the viewer intent and handles PDF read errors without terminating the app.
+- Keeps external PDFs completely offline in the native, ad-free `PdfRenderer` viewer.
 
 ## v7.2.3 mobile and offline PDF update
 
@@ -49,8 +55,8 @@ Web features hot-update through the hosted workspace. Native Android features su
 ## Android
 
 - Package: `com.atrangi.documentworkspace`
-- Native version: `7.2.3`
-- Version code: `8`
+- Native version: `7.2.4`
+- Version code: `9`
 - Hosted workspace loaded by the wrapper: `7.2.1`
 - Minimum Android: 7.0 (API 24)
 

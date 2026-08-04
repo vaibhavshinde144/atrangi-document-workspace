@@ -27,8 +27,8 @@ android {
         applicationId = "com.atrangi.documentworkspace"
         minSdk = 24
         targetSdk = 35
-        versionCode = 8
-        versionName = "7.2.3"
+        versionCode = 9
+        versionName = "7.2.4"
     }
 
     buildFeatures {
