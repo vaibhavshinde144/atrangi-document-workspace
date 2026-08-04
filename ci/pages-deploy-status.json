@@ -1,12 +1,12 @@
 {
   "status": "success",
-  "sourceCommit": "e01b7ae8b970f157947c43c9f9b314c3f5e7f94a",
-  "workflowRun": "30601980869",
+  "sourceCommit": "04d829243d6246d078a74193c19720ddd69fb679",
+  "workflowRun": "30933763804",
   "deployedUrl": "https://vaibhavshinde144.github.io/atrangi-document-workspace/",
   "webVersion": "7.2.1",
   "nativeVersionCode": 7,
   "nativeVersionName": "7.2.2",
   "deliveryMode": "external-bootstrap+startup-gate+simple-passport+native-sharing+direct-external-document-viewer+public-apk",
   "apkUrl": "https://vaibhavshinde144.github.io/atrangi-document-workspace/downloads/Atrangi-Document-Workspace.apk",
-  "recordedAtUtc": "2026-07-31T03:38:09Z"
+  "recordedAtUtc": "2026-08-04T17:26:32Z"
 }
