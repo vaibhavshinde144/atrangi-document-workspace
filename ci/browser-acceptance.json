@@ -28,7 +28,7 @@
     },
     {
       "name": "browser title v7.2.1",
-      "ok": true,
+      "ok": false,
       "detail": "Atrangi Document Workspace v7.2.1"
     },
     {
@@ -277,6 +277,8 @@
       "detail": "{\"shell\": {\"header\": {\"bottom\": 68, \"height\": 68, \"left\": 0, \"right\": 1425, \"toJSON\": {}, \"top\": 0, \"width\": 1425, \"x\": 0, \"y\": 0}, \"innerWidth\": 1440, \"logo\": true, \"scrollWidth\": 1425, \"shareExists\": true, \"theme\": true}, \"passport\": {\"bodyClient\": 1103, \"bodyScroll\": 1103, \"cardClient\": 1118, \"cardScroll\": 1118, \"left\": 152.5, \"open\": true, \"right\": 1272.5, \"viewport\": 1440}}"
     }
   ],
-  "failureCount": 0,
-  "failures": []
+  "failureCount": 1,
+  "failures": [
+    "browser title v7.2.1: Atrangi Document Workspace v7.2.1"
+  ]
 }
