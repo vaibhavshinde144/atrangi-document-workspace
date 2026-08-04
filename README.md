@@ -11,10 +11,17 @@ Website: `https://vaibhavshinde144.github.io/atrangi-document-workspace/`
 ## Current release
 
 - Hosted workspace: `7.2.1`
-- Android source/build: `7.2.4` (`versionCode 9`)
+- Android source/build: `7.2.5` (`versionCode 10`)
 - Stable APK: `https://vaibhavshinde144.github.io/atrangi-document-workspace/downloads/Atrangi-Document-Workspace.apk`
 
 Web features hot-update through the hosted workspace. Native Android features such as launcher resources, camera/share bridges and external **Open with Atrangi** handling require installing the latest APK.
+
+## v7.2.5 native PDF controls
+
+- Adds pinch zoom plus accessible zoom-out, zoom-in and fit controls from 75% to 300%.
+- Searches embedded PDF text locally with highlighted matches on Android 15 and newer; older Android versions transfer the same file into Atrangi's offline workspace search.
+- Sends the open PDF directly to Edit/Annotate, Add Password, Remove Password or Sign without asking the user to choose the file again.
+- Preserves the external file permission during handoff and safely cleans up Atrangi's temporary viewer copy.
 
 ## v7.2.4 external PDF crash fix
 
@@ -55,7 +62,7 @@ Web features hot-update through the hosted workspace. Native Android features su
 ## Android
 
 - Package: `com.atrangi.documentworkspace`
-- Native version: `7.2.4`
+- Native version: `7.2.5`
 - Version code: `9`
 - Hosted workspace loaded by the wrapper: `7.2.1`
 - Minimum Android: 7.0 (API 24)

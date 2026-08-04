@@ -67,7 +67,8 @@ class MainActivity : AppCompatActivity() {
         val id: String,
         val cacheFile: File,
         val displayName: String,
-        val mimeType: String
+        val mimeType: String,
+        val workspaceAction: String? = null
     )
 
     private val filePicker = registerForActivityResult(
@@ -423,6 +424,7 @@ class MainActivity : AppCompatActivity() {
                 .put("name", document.displayName)
                 .put("mime", document.mimeType)
                 .put("size", document.cacheFile.length())
+                .put("action", document.workspaceAction ?: "")
                 .toString()
         }
 
@@ -543,6 +545,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun openExternalPdfIfNeeded(source: Intent?): Boolean {
+        if (source?.getBooleanExtra(EXTRA_OPEN_IN_WORKSPACE, false) == true) return false
         val uri = extractExternalDocumentUri(source) ?: return false
         val mimeType = source?.type?.takeIf { it.isNotBlank() }
             ?: runCatching { contentResolver.getType(uri) }.getOrNull()
@@ -610,6 +613,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun prepareExternalDocument(source: Intent?) {
         val uri = extractExternalDocumentUri(source) ?: return
+        val workspaceAction = source?.getStringExtra(EXTRA_WORKSPACE_ACTION)
+            ?.takeIf { it in WORKSPACE_ACTIONS }
+        val workspaceSourcePath = source?.getStringExtra(EXTRA_WORKSPACE_SOURCE_PATH)
         externalOpenInProgress = false
         Thread {
             var cacheFileForCleanup: File? = null
@@ -626,11 +632,13 @@ class MainActivity : AppCompatActivity() {
                 input.use { sourceStream ->
                     tempFile.outputStream().use { target -> sourceStream.copyTo(target) }
                 }
+                deleteWorkspaceHandoffSource(workspaceSourcePath)
                 val document = ExternalDocument(
                     id = UUID.randomUUID().toString(),
                     cacheFile = tempFile,
                     displayName = displayName,
-                    mimeType = mimeType
+                    mimeType = mimeType,
+                    workspaceAction = workspaceAction
                 )
                 runOnUiThread {
                     if (isFinishing || isDestroyed) {
@@ -643,6 +651,7 @@ class MainActivity : AppCompatActivity() {
                 }
             } catch (error: Exception) {
                 cacheFileForCleanup?.delete()
+                deleteWorkspaceHandoffSource(workspaceSourcePath)
                 runOnUiThread {
                     Toast.makeText(
                         this,
@@ -652,6 +661,17 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }.start()
+    }
+
+    private fun deleteWorkspaceHandoffSource(path: String?) {
+        if (path.isNullOrBlank()) return
+        runCatching {
+            val source = File(path).canonicalFile
+            val viewerDirectory = File(cacheDir, "native-pdf-viewer").canonicalFile
+            if (source.parentFile == viewerDirectory && source.extension.equals("pdf", ignoreCase = true)) {
+                source.delete()
+            }
+        }
     }
 
     private fun resolveExternalDisplayName(uri: Uri, mimeType: String): String {
@@ -724,6 +744,10 @@ class MainActivity : AppCompatActivity() {
         private const val CONTENT_READY_FALLBACK_MS = 1600L
         private const val MAX_SHARE_BASE64_CHARS = 32_000_000
         private const val EXTERNAL_CHUNK_BYTES = 256 * 1024
+        private const val EXTRA_OPEN_IN_WORKSPACE = "atrangi.pdf.OPEN_IN_WORKSPACE"
+        private const val EXTRA_WORKSPACE_ACTION = "atrangi.pdf.WORKSPACE_ACTION"
+        private const val EXTRA_WORKSPACE_SOURCE_PATH = "atrangi.pdf.WORKSPACE_SOURCE_PATH"
+        private val WORKSPACE_ACTIONS = setOf("search", "edit", "addPassword", "removePassword", "signPdf")
         private val EXTERNAL_DOCUMENT_OPEN_SCRIPT = """
             (function waitForAtrangiExternalOpen(attempt){
               const nativeBridge=window.AtrangiNative;
@@ -773,7 +797,11 @@ class MainActivity : AppCompatActivity() {
                   };
                   asset.capability=core.capability(asset);
                   if(window.AtrangiScannerApp?.switchTab)window.AtrangiScannerApp.switchTab('files');
-                  await workspace.openAsset(asset);
+                  if(info.action&&typeof workspace.openExternalAction==='function'){
+                    await workspace.openExternalAction(info.action,file,asset);
+                  }else{
+                    await workspace.openAsset(asset);
+                  }
                   nativeBridge.markExternalDocumentConsumed(info.id);
                 }catch(error){
                   nativeBridge.externalDocumentFailed(info?.id||'',error?.message||String(error||'Unable to open document.'));

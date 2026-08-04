@@ -55,6 +55,7 @@ async function shareActive(){if(!active)return;const blob=active.virtualScan?nul
 function printActive(){if(!active)return;window.print();put('audit',W.audit(active.id,'file.printed',{}))}
 function readAloud(){const text=(active?.extractedText||currentText||'').trim();if(!text)return toast('No readable text is indexed for this file.','error');if(!('speechSynthesis'in window))return toast('Read aloud is not supported in this browser.','error');speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(text.slice(0,20000)))}
 function findWithin(){const q=prompt('Find in document');if(!q)return;const text=(active?.extractedText||currentText||$('universalCanvas')?.innerText||'');const idx=text.toLowerCase().indexOf(q.toLowerCase());if(idx<0)return toast('Text not found.','error');toast(`Found at character ${idx+1}.`,'success');try{if(window.find)window.find(q,false,false,true,false,false,false)}catch{}}
+async function openExternalAction(action,file,asset){if(action==='edit'){await openAsset(asset);showRight('annotations');await renderAnnotations();toast('Edit mode is ready. Add annotations, comments, metadata or use the PDF tools.','success');return}if(action==='search'){await openAsset(asset);setTimeout(findWithin,180);return}if(['addPassword','removePassword','signPdf'].includes(action)){App.switchTab('tools');App.openToolWithFile(action,file);return}await openAsset(asset)}
 function setViewMode(mode){const c=$('universalCanvas');c.classList.remove('uv-mode-continuous','uv-mode-spread','uv-mode-reading');c.classList.add('uv-mode-'+mode);$('uvViewMode').value=mode}
 function fitView(){currentScale=1;$('universalCanvas').style.setProperty('--uv-scale',1);$('uvZoomLabel').textContent='Fit'}
 function zoom(delta){currentScale=Math.max(.4,Math.min(3,currentScale+delta));$('universalCanvas').style.setProperty('--uv-scale',currentScale);$('uvZoomLabel').textContent=Math.round(currentScale*100)+'%'}
@@ -82,6 +83,6 @@ function bindV71Discoverability(){
  document.querySelectorAll('[data-v71-go]').forEach(b=>b.addEventListener('click',()=>App.switchTab(b.dataset.v71Go)));
  try{const key='atrangi_v71_home_seen'; if(!localStorage.getItem(key)){setTimeout(()=>App.switchTab('home'),80); localStorage.setItem(key,'1')}}catch{}
 }
-function init(){applyV71Branding();bindV71Discoverability();if(!$('universalWorkspace'))return;bind();load();window.AtrangiWorkspaceV7={load,importFiles,openAsset,get assets(){return assets},db:{getAll,put,del}}}
+function init(){applyV71Branding();bindV71Discoverability();if(!$('universalWorkspace'))return;bind();load();window.AtrangiWorkspaceV7={load,importFiles,openAsset,openExternalAction,get assets(){return assets},db:{getAll,put,del}}}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
