@@ -163,7 +163,7 @@ internal object UpdateManager {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         val detail = if (hasNativeUpdate) {
-            "Atrangi ${info.nativeVersionName} is ready. Tap Update to download the Android package with direct external document opening and the latest native features."
+            "Atrangi ${info.nativeVersionName} is ready. Tap Update for corrected mobile sizing and the new completely offline native PDF viewer."
         } else {
             info.notes
         }

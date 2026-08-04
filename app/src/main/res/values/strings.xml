@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pdf_viewer_opening_securely">Opening securely on this device...</string>
+    <string name="pdf_viewer_opening_offline">Opening PDF offline...</string>
+    <string name="pdf_viewer_preparing_pages">Preparing pages</string>
+    <string name="pdf_viewer_offline_fit">OFFLINE - FIT TO WIDTH</string>
+    <string name="pdf_viewer_page_of">Page %1$d of %2$d</string>
+    <string name="pdf_viewer_unable_to_open">Unable to open PDF\n\n%1$s</string>
+    <string name="pdf_viewer_read_failure">Offline viewer could not read this file</string>
+    <string name="pdf_viewer_unavailable">PDF unavailable</string>
+    <string name="pdf_viewer_page_description">PDF page %1$d</string>
+    <string name="pdf_viewer_page_render_failure">Page %1$d could not be rendered</string>
+    <plurals name="pdf_viewer_ready">
+        <item quantity="one">%1$d page - offline - ready in %2$d ms</item>
+        <item quantity="other">%1$d pages - offline - ready in %2$d ms</item>
+    </plurals>
+</resources>

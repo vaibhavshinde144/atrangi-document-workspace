@@ -23,11 +23,18 @@
             android:theme="@style/Theme.AtrangiDocumentWorkspace" />
 
         <activity
+            android:name=".PdfViewerActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AtrangiDocumentWorkspace"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
             android:name=".MainActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
             android:exported="true"
             android:launchMode="singleTop"
-            android:screenOrientation="unspecified">
+            android:screenOrientation="unspecified"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

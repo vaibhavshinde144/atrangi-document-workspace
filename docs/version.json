@@ -1,9 +1,9 @@
 {
   "webVersion": "7.2.1",
-  "nativeVersionCode": 7,
-  "nativeVersionName": "7.2.2",
+  "nativeVersionCode": 8,
+  "nativeVersionName": "7.2.3",
   "mandatory": false,
-  "title": "Atrangi Document Workspace v7.2.2",
-  "notes": "Adds direct external document opening on Android. PDFs and other supported files opened or shared to Atrangi now go straight into the existing Atrangi viewer without ads or an intermediate home/import step. The file is handled locally through temporary app cache and is not automatically saved to the workspace library.",
+  "title": "Atrangi Document Workspace v7.2.3",
+  "notes": "Adds a completely offline native Android PDF viewer for files opened or shared from other apps. External PDFs now bypass the WebView, blob downloads and online PDF libraries, render immediately with Android PdfRenderer, and include an ad-free fit-to-width viewer and direct share action. Mobile WebView scaling and status/navigation bar safe areas are also corrected.",
   "apkUrl": "https://vaibhavshinde144.github.io/atrangi-document-workspace/downloads/Atrangi-Document-Workspace.apk"
 }
