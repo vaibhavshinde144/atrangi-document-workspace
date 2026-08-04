@@ -119,7 +119,10 @@ jobs:
           APK=app/build/outputs/apk/release/app-release.apk
           test -s "$APK"
           unzip -t "$APK" >/dev/null
-          unzip -l "$APK" | grep -q 'atrangi_riders_logo' || { echo 'Exact Atrangi Riders logo resource missing from APK'; exit 1; }
+          AAPT="$(find "${ANDROID_HOME:?}/build-tools" -type f -name aapt | sort -V | tail -1)"
+          test -x "$AAPT"
+          "$AAPT" dump resources "$APK" > "$RUNNER_TEMP/atrangi-release-resources.txt"
+          grep -q 'drawable/atrangi_riders_logo' "$RUNNER_TEMP/atrangi-release-resources.txt" || { echo 'Atrangi Riders logo resource missing from release APK'; exit 1; }
           APKSIGNER="$(find "${ANDROID_HOME:?}/build-tools" -type f -name apksigner | sort -V | tail -1)"
           test -x "$APKSIGNER"
           "$APKSIGNER" verify --verbose --print-certs "$APK"
