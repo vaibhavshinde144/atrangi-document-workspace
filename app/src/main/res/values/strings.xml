@@ -10,6 +10,11 @@
     <string name="pdf_viewer_unavailable">PDF unavailable</string>
     <string name="pdf_viewer_page_description">PDF page %1$d</string>
     <string name="pdf_viewer_page_render_failure">Page %1$d could not be rendered</string>
+    <string name="pdf_viewer_searching">Searching for “%1$s”…</string>
+    <string name="pdf_viewer_no_search_results">No results for “%1$s”</string>
+    <string name="pdf_viewer_search_unavailable">Text search is unavailable for this PDF</string>
+    <string name="pdf_viewer_search_position">“%1$s” · match %2$d of %3$d · page %4$d</string>
+    <string name="pdf_viewer_page_matches">Page %1$d of %2$d · %3$d matches</string>
     <plurals name="pdf_viewer_ready">
         <item quantity="one">%1$d page - offline - ready in %2$d ms</item>
         <item quantity="other">%1$d pages - offline - ready in %2$d ms</item>

@@ -1,21 +1,30 @@
 package com.atrangi.documentworkspace
 
+import android.app.AlertDialog
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.RectF
 import android.graphics.drawable.GradientDrawable
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.util.LruCache
 import android.view.Gravity
+import android.view.MotionEvent
+import android.view.ScaleGestureDetector
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
@@ -33,6 +42,7 @@ import java.io.File
 import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
@@ -50,10 +60,18 @@ class PdfViewerActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var loadingView: LinearLayout
     private lateinit var pageIndicator: TextView
+    private lateinit var zoomLabel: TextView
+    private lateinit var nextSearchAction: TextView
     private var renderer: PdfRenderer? = null
     private var descriptor: ParcelFileDescriptor? = null
     private var cachedPdf: File? = null
+    private var pageAdapter: PdfPageAdapter? = null
     private var displayName: String = "Document.pdf"
+    private var zoomLevel = 1f
+    private var searchQuery = ""
+    private var searchResultPages = emptyList<Int>()
+    private var currentSearchResult = 0
+    private var handoffInProgress = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -120,6 +138,26 @@ class PdfViewerActivity : AppCompatActivity() {
         )
         contentView.addView(toolbar, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 64.dp))
 
+        val actionRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(10.dp, 7.dp, 10.dp, 7.dp)
+        }
+        actionRow.addView(actionChip("Search", "Search text in this PDF") { promptSearch() })
+        nextSearchAction = actionChip("Next", "Go to the next search result") { nextSearchResult() }.apply {
+            visibility = View.GONE
+        }
+        actionRow.addView(nextSearchAction)
+        actionRow.addView(actionChip("Edit", "Edit or annotate in Atrangi") { openInWorkspace("edit") })
+        actionRow.addView(actionChip("Add password", "Protect this PDF with a password") { openInWorkspace("addPassword") })
+        actionRow.addView(actionChip("Remove password", "Remove this PDF password") { openInWorkspace("removePassword") })
+        actionRow.addView(actionChip("Sign", "Add a signature to this PDF") { openInWorkspace("signPdf") })
+        contentView.addView(HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            setBackgroundColor(Color.WHITE)
+            addView(actionRow, ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 58.dp))
+
         val viewerHost = FrameLayout(this).apply { setBackgroundColor(PAGE_BACKGROUND) }
         recyclerView = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@PdfViewerActivity)
@@ -132,6 +170,22 @@ class PdfViewerActivity : AppCompatActivity() {
                 }
             })
         }
+        val scaleDetector = ScaleGestureDetector(this, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            override fun onScale(detector: ScaleGestureDetector): Boolean {
+                setZoom(zoomLevel * detector.scaleFactor)
+                return true
+            }
+        })
+        recyclerView.addOnItemTouchListener(object : RecyclerView.SimpleOnItemTouchListener() {
+            override fun onInterceptTouchEvent(rv: RecyclerView, event: MotionEvent): Boolean {
+                scaleDetector.onTouchEvent(event)
+                return scaleDetector.isInProgress
+            }
+
+            override fun onTouchEvent(rv: RecyclerView, event: MotionEvent) {
+                scaleDetector.onTouchEvent(event)
+            }
+        })
         viewerHost.addView(
             recyclerView,
             FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
@@ -170,14 +224,17 @@ class PdfViewerActivity : AppCompatActivity() {
             setTypeface(typeface, android.graphics.Typeface.BOLD)
         }
         footer.addView(pageIndicator, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        footer.addView(TextView(this).apply {
-            setText(R.string.pdf_viewer_offline_fit)
-            setTextColor(Color.rgb(20, 120, 95))
-            textSize = 9f
+        footer.addView(footerControl("−", "Zoom out") { setZoom(zoomLevel - .25f) })
+        zoomLabel = TextView(this).apply {
+            text = "100%"
+            gravity = Gravity.CENTER
+            setTextColor(Color.rgb(25, 58, 69))
+            textSize = 11f
             setTypeface(typeface, android.graphics.Typeface.BOLD)
-            setPadding(10.dp, 7.dp, 10.dp, 7.dp)
-            background = roundedBackground(Color.rgb(231, 248, 241), 999.dp, Color.rgb(190, 227, 212))
-        })
+        }
+        footer.addView(zoomLabel, LinearLayout.LayoutParams(50.dp, 42.dp))
+        footer.addView(footerControl("+", "Zoom in") { setZoom(zoomLevel + .25f) })
+        footer.addView(footerControl("Fit", "Fit pages to screen") { setZoom(1f) }.apply { textSize = 11f })
         contentView.addView(footer, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 54.dp))
 
         rootView.addView(
@@ -251,7 +308,7 @@ class PdfViewerActivity : AppCompatActivity() {
                         elapsed
                     )
                     loadingView.visibility = View.GONE
-                    recyclerView.adapter = PdfPageAdapter(localRenderer)
+                    pageAdapter = PdfPageAdapter(localRenderer).also { recyclerView.adapter = it }
                     pageIndicator.text = getString(R.string.pdf_viewer_page_of, 1, localRenderer.pageCount)
                 }
             } catch (error: Exception) {
@@ -301,6 +358,150 @@ class PdfViewerActivity : AppCompatActivity() {
         startActivity(Intent.createChooser(share, "Share $displayName"))
     }
 
+    private fun promptSearch() {
+        if (cachedPdf == null) {
+            Toast.makeText(this, "Please wait until the PDF opens.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            AlertDialog.Builder(this)
+                .setTitle("Search this PDF")
+                .setMessage("On this Android version, text search opens in the Atrangi workspace and remains on your device.")
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Continue") { _, _ -> openInWorkspace("search") }
+                .show()
+            return
+        }
+        val input = EditText(this).apply {
+            hint = "Text to find"
+            setSingleLine(true)
+            setText(searchQuery)
+            selectAll()
+            setPadding(16.dp, 12.dp, 16.dp, 12.dp)
+        }
+        val holder = FrameLayout(this).apply {
+            setPadding(20.dp, 4.dp, 20.dp, 0)
+            addView(input, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Search this PDF")
+            .setView(holder)
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Search") { _, _ -> searchPdf(input.text.toString()) }
+            .show()
+    }
+
+    @Suppress("NewApi")
+    private fun searchPdf(rawQuery: String) {
+        val query = rawQuery.trim()
+        if (query.isEmpty()) {
+            Toast.makeText(this, "Enter text to search for.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            openInWorkspace("search")
+            return
+        }
+        searchQuery = query
+        nextSearchAction.visibility = View.GONE
+        subtitleView.text = getString(R.string.pdf_viewer_searching, query)
+        renderExecutor.execute {
+            val localRenderer = renderer ?: return@execute
+            val pages = mutableListOf<Int>()
+            val highlights = mutableMapOf<Int, List<RectF>>()
+            try {
+                for (pageIndex in 0 until localRenderer.pageCount) {
+                    localRenderer.openPage(pageIndex).use { page ->
+                        val matches = page.searchText(query)
+                        if (matches.isNotEmpty()) {
+                            repeat(matches.size) { pages.add(pageIndex) }
+                            highlights[pageIndex] = matches.flatMap { match ->
+                                match.bounds.map(::RectF)
+                            }
+                        }
+                    }
+                }
+                runOnUiThread {
+                    if (isFinishing || isDestroyed) return@runOnUiThread
+                    searchResultPages = pages
+                    currentSearchResult = 0
+                    pageAdapter?.setSearchHighlights(highlights)
+                    if (pages.isEmpty()) {
+                        subtitleView.text = getString(R.string.pdf_viewer_no_search_results, query)
+                        Toast.makeText(this, "No embedded text found. Try OCR or Edit in the workspace.", Toast.LENGTH_LONG).show()
+                    } else {
+                        nextSearchAction.visibility = View.VISIBLE
+                        showCurrentSearchResult()
+                    }
+                }
+            } catch (error: Exception) {
+                runOnUiThread {
+                    if (!isFinishing && !isDestroyed) {
+                        subtitleView.setText(R.string.pdf_viewer_search_unavailable)
+                        Toast.makeText(this, "Search failed: ${error.message ?: "Unable to read PDF text"}", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun nextSearchResult() {
+        if (searchResultPages.isEmpty()) return
+        currentSearchResult = (currentSearchResult + 1) % searchResultPages.size
+        showCurrentSearchResult()
+    }
+
+    private fun showCurrentSearchResult() {
+        val page = searchResultPages.getOrNull(currentSearchResult) ?: return
+        nextSearchAction.text = "Next ${currentSearchResult + 1}/${searchResultPages.size}"
+        subtitleView.text = getString(
+            R.string.pdf_viewer_search_position,
+            searchQuery,
+            currentSearchResult + 1,
+            searchResultPages.size,
+            page + 1
+        )
+        recyclerView.smoothScrollToPosition(page)
+    }
+
+    private fun setZoom(requested: Float) {
+        val next = requested.coerceIn(MIN_ZOOM, MAX_ZOOM)
+        if (abs(next - zoomLevel) < .01f) return
+        val manager = recyclerView.layoutManager as? LinearLayoutManager
+        val visiblePage = manager?.findFirstVisibleItemPosition()?.coerceAtLeast(0) ?: 0
+        val offset = manager?.findViewByPosition(visiblePage)?.top ?: 0
+        zoomLevel = next
+        zoomLabel.text = "${(zoomLevel * 100).roundToInt()}%"
+        pageAdapter?.setZoom(zoomLevel)
+        recyclerView.post { manager?.scrollToPositionWithOffset(visiblePage, offset) }
+    }
+
+    private fun openInWorkspace(action: String) {
+        val file = cachedPdf
+        if (file == null || !file.exists()) {
+            Toast.makeText(this, "Please wait until the PDF opens.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        try {
+            val uri = FileProvider.getUriForFile(this, "${BuildConfig.APPLICATION_ID}.fileprovider", file)
+            val workspaceIntent = Intent(this, MainActivity::class.java).apply {
+                this.action = Intent.ACTION_VIEW
+                setDataAndType(uri, "application/pdf")
+                clipData = ClipData.newRawUri(displayName, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                putExtra(EXTRA_OPEN_IN_WORKSPACE, true)
+                putExtra(EXTRA_WORKSPACE_ACTION, action)
+                putExtra(EXTRA_WORKSPACE_SOURCE_PATH, file.canonicalPath)
+            }
+            handoffInProgress = true
+            startActivity(workspaceIntent)
+            finish()
+        } catch (error: Exception) {
+            handoffInProgress = false
+            Toast.makeText(this, "Unable to open workspace: ${error.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
     private fun updatePageIndicator() {
         val manager = recyclerView.layoutManager as? LinearLayoutManager ?: return
         val first = manager.findFirstVisibleItemPosition()
@@ -319,6 +520,35 @@ class PdfViewerActivity : AppCompatActivity() {
         setOnClickListener { action() }
     }
 
+    private fun actionChip(label: String, description: String, action: () -> Unit): TextView = TextView(this).apply {
+        text = label
+        contentDescription = description
+        gravity = Gravity.CENTER
+        setTextColor(Color.rgb(10, 92, 117))
+        textSize = 12f
+        setTypeface(typeface, android.graphics.Typeface.BOLD)
+        setPadding(14.dp, 0, 14.dp, 0)
+        background = roundedBackground(Color.rgb(244, 250, 252), 12.dp, Color.rgb(193, 216, 224))
+        isClickable = true
+        isFocusable = true
+        setOnClickListener { action() }
+        layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, 42.dp).apply { marginEnd = 8.dp }
+    }
+
+    private fun footerControl(label: String, description: String, action: () -> Unit): TextView = TextView(this).apply {
+        text = label
+        contentDescription = description
+        gravity = Gravity.CENTER
+        setTextColor(Color.rgb(10, 92, 117))
+        textSize = 19f
+        setTypeface(typeface, android.graphics.Typeface.BOLD)
+        isClickable = true
+        isFocusable = true
+        setOnClickListener { action() }
+        background = roundedBackground(Color.rgb(244, 250, 252), 10.dp, Color.rgb(205, 222, 228))
+        layoutParams = LinearLayout.LayoutParams(44.dp, 42.dp).apply { marginStart = 5.dp }
+    }
+
     private fun roundedBackground(fill: Int, radius: Int, stroke: Int? = null): GradientDrawable =
         GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE
@@ -329,15 +559,34 @@ class PdfViewerActivity : AppCompatActivity() {
 
     private inner class PdfPageAdapter(private val pdf: PdfRenderer) :
         RecyclerView.Adapter<PdfPageAdapter.PageHolder>() {
-        private val cache = object : LruCache<Int, Bitmap>(
+        private val cache = object : LruCache<String, Bitmap>(
             ((Runtime.getRuntime().maxMemory() / 1024L) / 10L).coerceAtMost(48L * 1024L).toInt()
         ) {
-            override fun sizeOf(key: Int, value: Bitmap): Int = value.byteCount / 1024
+            override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount / 1024
+        }
+        private var adapterZoom = 1f
+        @Volatile private var searchHighlights: Map<Int, List<RectF>> = emptyMap()
+        private var searchVersion = 0
+
+        fun setZoom(value: Float) {
+            adapterZoom = value
+            notifyDataSetChanged()
+        }
+
+        fun setSearchHighlights(value: Map<Int, List<RectF>>) {
+            searchHighlights = value.mapValues { (_, bounds) -> bounds.map(::RectF) }
+            searchVersion++
+            cache.evictAll()
+            notifyDataSetChanged()
         }
 
         override fun getItemCount(): Int = pdf.pageCount
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PageHolder {
+            val scroller = HorizontalScrollView(parent.context).apply {
+                isHorizontalScrollBarEnabled = true
+                overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
+            }
             val card = LinearLayout(parent.context).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(8.dp, 8.dp, 8.dp, 8.dp)
@@ -362,17 +611,29 @@ class PdfViewerActivity : AppCompatActivity() {
             stage.addView(progress, FrameLayout.LayoutParams(36.dp, 36.dp, Gravity.CENTER))
             card.addView(label, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
             card.addView(stage, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-            card.layoutParams = RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            scroller.addView(card, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+            scroller.layoutParams = RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
                 bottomMargin = 12.dp
             }
-            return PageHolder(card, label, image, progress)
+            return PageHolder(scroller, scroller, card, label, image, progress)
         }
 
         override fun onBindViewHolder(holder: PageHolder, position: Int) {
             holder.boundPage = position
-            holder.label.text = getString(R.string.pdf_viewer_page_of, position + 1, pdf.pageCount)
+            val matchCount = searchHighlights[position]?.size ?: 0
+            holder.label.text = if (matchCount > 0) {
+                getString(R.string.pdf_viewer_page_matches, position + 1, pdf.pageCount, matchCount)
+            } else {
+                getString(R.string.pdf_viewer_page_of, position + 1, pdf.pageCount)
+            }
             holder.image.contentDescription = getString(R.string.pdf_viewer_page_description, position + 1)
-            val cached = cache.get(position)
+            val viewportWidth = (recyclerView.width - 24.dp).coerceAtLeast(320.dp)
+            val cardWidth = (viewportWidth * adapterZoom).roundToInt().coerceAtLeast(240.dp)
+            holder.scroller.isFillViewport = adapterZoom <= 1f
+            holder.card.layoutParams = FrameLayout.LayoutParams(cardWidth, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL)
+            val cacheKey = "$position:${(adapterZoom * 100).roundToInt()}:$searchVersion"
+            holder.boundRenderKey = cacheKey
+            val cached = cache.get(cacheKey)
             if (cached != null) {
                 holder.image.setImageBitmap(cached)
                 holder.progress.visibility = View.GONE
@@ -386,17 +647,33 @@ class PdfViewerActivity : AppCompatActivity() {
                 try {
                     val openedPage = pdf.openPage(position)
                     page = openedPage
-                    val availableWidth = (recyclerView.width - 40.dp).coerceAtLeast(480)
-                    val targetWidth = availableWidth.coerceAtMost(1800)
+                    val targetWidth = (cardWidth - 16.dp).coerceIn(480, 2000)
                     val targetHeight = (targetWidth.toDouble() * openedPage.height / openedPage.width)
                         .roundToInt()
                         .coerceAtLeast(1)
                     val bitmap = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
                     bitmap.eraseColor(Color.WHITE)
                     openedPage.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                    cache.put(position, bitmap)
+                    val bounds = searchHighlights[position].orEmpty()
+                    if (bounds.isNotEmpty()) {
+                        val canvas = Canvas(bitmap)
+                        val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(92, 255, 205, 40) }
+                        val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                            color = Color.rgb(223, 152, 0)
+                            style = Paint.Style.STROKE
+                            strokeWidth = 2.dp.toFloat()
+                        }
+                        val scaleX = targetWidth.toFloat() / openedPage.width
+                        val scaleY = targetHeight.toFloat() / openedPage.height
+                        bounds.forEach { source ->
+                            val target = RectF(source.left * scaleX, source.top * scaleY, source.right * scaleX, source.bottom * scaleY)
+                            canvas.drawRoundRect(target, 3.dp.toFloat(), 3.dp.toFloat(), fill)
+                            canvas.drawRoundRect(target, 3.dp.toFloat(), 3.dp.toFloat(), stroke)
+                        }
+                    }
+                    cache.put(cacheKey, bitmap)
                     runOnUiThread {
-                        if (!isFinishing && !isDestroyed && holder.boundPage == position) {
+                        if (!isFinishing && !isDestroyed && holder.boundPage == position && holder.boundRenderKey == cacheKey) {
                             holder.image.setImageBitmap(bitmap)
                             holder.progress.visibility = View.GONE
                         }
@@ -416,17 +693,21 @@ class PdfViewerActivity : AppCompatActivity() {
 
         override fun onViewRecycled(holder: PageHolder) {
             holder.boundPage = RecyclerView.NO_POSITION
+            holder.boundRenderKey = ""
             holder.image.setImageDrawable(null)
             super.onViewRecycled(holder)
         }
 
         inner class PageHolder(
             item: View,
+            val scroller: HorizontalScrollView,
+            val card: LinearLayout,
             val label: TextView,
             val image: ImageView,
             val progress: ProgressBar
         ) : RecyclerView.ViewHolder(item) {
             var boundPage: Int = RecyclerView.NO_POSITION
+            var boundRenderKey: String = ""
         }
     }
 
@@ -435,7 +716,7 @@ class PdfViewerActivity : AppCompatActivity() {
             renderExecutor.execute {
                 runCatching { renderer?.close() }
                 runCatching { descriptor?.close() }
-                runCatching { cachedPdf?.delete() }
+                if (!handoffInProgress) runCatching { cachedPdf?.delete() }
             }
             renderExecutor.shutdown()
         }
@@ -447,6 +728,11 @@ class PdfViewerActivity : AppCompatActivity() {
     companion object {
         private const val EXTRA_URI = "atrangi.pdf.URI"
         private const val EXTRA_NAME = "atrangi.pdf.NAME"
+        private const val EXTRA_OPEN_IN_WORKSPACE = "atrangi.pdf.OPEN_IN_WORKSPACE"
+        private const val EXTRA_WORKSPACE_ACTION = "atrangi.pdf.WORKSPACE_ACTION"
+        private const val EXTRA_WORKSPACE_SOURCE_PATH = "atrangi.pdf.WORKSPACE_SOURCE_PATH"
+        private const val MIN_ZOOM = .75f
+        private const val MAX_ZOOM = 3f
         private val PRIMARY_DARK = Color.rgb(7, 55, 72)
         private val PAGE_BACKGROUND = Color.rgb(235, 241, 243)
 
