@@ -11,8 +11,8 @@ android {
         applicationId = "com.atrangi.documentworkspace"
         minSdk = 24
         targetSdk = 35
-        versionCode = 7
-        versionName = "7.2.2"
+        versionCode = 8
+        versionName = "7.2.3"
     }
 
     buildFeatures {
@@ -41,6 +41,7 @@ dependencies {
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.activity:activity-ktx:1.10.0")
+    implementation("androidx.recyclerview:recyclerview:1.4.0")
     implementation("androidx.webkit:webkit:1.12.1")
     implementation("androidx.work:work-runtime-ktx:2.10.1")
 }

@@ -38,6 +38,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import org.json.JSONObject
 import java.io.File
 import java.io.RandomAccessFile
@@ -46,6 +50,8 @@ import java.util.UUID
 class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private lateinit var rootView: FrameLayout
+    private lateinit var appContentView: FrameLayout
+    private lateinit var statusBarScrim: View
     private lateinit var splashView: View
     private var contentIsVisible = false
     private var webContentReady = false
@@ -107,28 +113,55 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        rootView = FrameLayout(this)
+        if (openExternalPdfIfNeeded(intent)) {
+            finish()
+            return
+        }
+
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.statusBarColor = Color.rgb(7, 55, 72)
+        window.navigationBarColor = Color.WHITE
+        WindowInsetsControllerCompat(window, window.decorView).apply {
+            isAppearanceLightStatusBars = false
+            isAppearanceLightNavigationBars = true
+        }
+
+        rootView = FrameLayout(this).apply { setBackgroundColor(Color.WHITE) }
+        appContentView = FrameLayout(this)
         webView = WebView(this).apply {
             alpha = 0f
             visibility = View.INVISIBLE
             setBackgroundColor(Color.rgb(247, 249, 250))
         }
         splashView = createLaunchView()
-        rootView.addView(
+        appContentView.addView(
             webView,
             FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
         )
-        rootView.addView(
+        appContentView.addView(
             splashView,
             FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
         )
+        rootView.addView(
+            appContentView,
+            FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        )
+        statusBarScrim = View(this).apply { setBackgroundColor(Color.rgb(7, 55, 72)) }
+        rootView.addView(
+            statusBarScrim,
+            FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, Gravity.TOP)
+        )
         setContentView(rootView)
+        applySystemBarInsets()
         configureWebView()
 
         UpdateManager.createNotificationChannel(this)
@@ -167,7 +200,7 @@ class MainActivity : AppCompatActivity() {
             builtInZoomControls = false
             displayZoomControls = false
             loadWithOverviewMode = false
-            useWideViewPort = false
+            useWideViewPort = true
             textZoom = 100
             cacheMode = WebSettings.LOAD_DEFAULT
             mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
@@ -175,8 +208,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         webView.addJavascriptInterface(AtrangiNativeBridge(), "AtrangiNative")
-        webView.setInitialScale(100)
         webView.isHorizontalScrollBarEnabled = false
+        webView.overScrollMode = View.OVER_SCROLL_NEVER
 
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
@@ -282,6 +315,27 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Unable to download: ${error.message}", Toast.LENGTH_LONG).show()
             }
         })
+    }
+
+    private fun applySystemBarInsets() {
+        ViewCompat.setOnApplyWindowInsetsListener(rootView) { _, insets ->
+            val statusInsets = insets.getInsets(
+                WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            val navigationInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+            val contentParams = appContentView.layoutParams as FrameLayout.LayoutParams
+            contentParams.leftMargin = maxOf(statusInsets.left, navigationInsets.left)
+            contentParams.topMargin = statusInsets.top
+            contentParams.rightMargin = maxOf(statusInsets.right, navigationInsets.right)
+            contentParams.bottomMargin = navigationInsets.bottom
+            appContentView.layoutParams = contentParams
+
+            val scrimParams = statusBarScrim.layoutParams as FrameLayout.LayoutParams
+            scrimParams.height = statusInsets.top
+            statusBarScrim.layoutParams = scrimParams
+            insets
+        }
+        ViewCompat.requestApplyInsets(rootView)
     }
 
     private fun createDocumentPicker(): Intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
@@ -483,9 +537,36 @@ class MainActivity : AppCompatActivity() {
         webView.animate().alpha(1f).setDuration(160L).start()
         if (::splashView.isInitialized) {
             splashView.animate().alpha(0f).setDuration(120L).withEndAction {
-                if (splashView.parent === rootView) rootView.removeView(splashView)
+                if (splashView.parent === appContentView) appContentView.removeView(splashView)
             }.start()
         }
+    }
+
+    private fun openExternalPdfIfNeeded(source: Intent?): Boolean {
+        val uri = extractExternalDocumentUri(source) ?: return false
+        val mimeType = source?.type?.takeIf { it.isNotBlank() }
+            ?: runCatching { contentResolver.getType(uri) }.getOrNull()
+            ?: "application/octet-stream"
+        val displayName = resolveExternalDisplayName(uri, mimeType)
+        if (!isPdfDocument(uri, mimeType, displayName)) return false
+
+        val viewerIntent = PdfViewerActivity.createIntent(this, uri, displayName).apply {
+            clipData = ClipData.newRawUri(displayName, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        startActivity(viewerIntent)
+        return true
+    }
+
+    private fun isPdfDocument(uri: Uri, mimeType: String, displayName: String): Boolean {
+        if (mimeType.equals("application/pdf", ignoreCase = true)) return true
+        if (displayName.endsWith(".pdf", ignoreCase = true)) return true
+        return runCatching {
+            contentResolver.openInputStream(uri)?.use { input ->
+                val signature = ByteArray(5)
+                input.read(signature) == signature.size && signature.contentEquals("%PDF-".toByteArray())
+            } == true
+        }.getOrDefault(false)
     }
 
     private fun applyLaunchIntent(source: Intent?) {
@@ -611,6 +692,7 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        if (openExternalPdfIfNeeded(intent)) return
         applyLaunchIntent(intent)
     }
 
@@ -671,14 +753,14 @@ class MainActivity : AppCompatActivity() {
                     offset+=bytes.length;
                   }
                   const file=new File(parts,info.name||'Document',{type:info.mime||'application/octet-stream',lastModified:Date.now()});
-                  const family=await core.detectWithSignature(file);
+                  const detected=await core.detectWithSignature(file);
                   const now=Date.now();
                   const asset={
                     id:'external:'+info.id,
                     name:file.name,
                     mime:file.type||info.mime||'application/octet-stream',
                     size:file.size,
-                    family,
+                    family:detected.id,
                     createdAt:now,
                     modifiedAt:now,
                     versionNo:1,
