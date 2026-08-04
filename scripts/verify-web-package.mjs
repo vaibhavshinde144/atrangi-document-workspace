@@ -69,6 +69,8 @@ for(const workflowPath of ['.github/workflows/pages.yml','.github/workflows/andr
   for(const token of ['secrets.ATRANGI_SIGNING_KEY_BASE64','secrets.ATRANGI_KEYSTORE_PASSWORD','secrets.ATRANGI_KEY_ALIAS','secrets.ATRANGI_KEY_PASSWORD',':app:assembleRelease','app/build/outputs/apk/release/app-release.apk','apksigner'])assert.ok(workflow.includes(token),`${workflowPath} stable release workflow missing ${token}`);
   assert.ok(!workflow.includes(':app:assembleDebug'),`${workflowPath} must not publish a per-run debug-signed APK`);
 }
+const pagesWorkflow=fs.readFileSync(path.join(root,'.github/workflows/pages.yml'),'utf8');
+for(const token of ['aapt','dump resources','drawable/atrangi_riders_logo'])assert.ok(pagesWorkflow.includes(token),`release APK resource-table verification missing ${token}`);
 const androidLogo=fs.readFileSync(path.join(root,'app/src/main/res/drawable-nodpi/atrangi_riders_logo.png'));
 assert.equal(crypto.createHash('sha256').update(androidLogo).digest('hex'),expectedLogoSha256,'Android logo must be byte-identical to the supplied circular logo');
 const manifest=fs.readFileSync(path.join(root,'app/src/main/AndroidManifest.xml'),'utf8');
