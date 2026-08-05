@@ -1,8 +1,20 @@
 /* Atrangi v7.1.5 mobile/Android hardening. Browser layout is unchanged unless the native wrapper ?app= marker is present. */
-:root{--atrangi-native-top:0px}
-html.atrangi-native-shell{--atrangi-native-top:max(env(safe-area-inset-top),26px);background:#103a4c}
+:root{--atrangi-native-top:0px;--atrangi-native-left:0px;--atrangi-native-right:0px}
+html.atrangi-native-shell{--atrangi-native-top:max(env(safe-area-inset-top),26px);--atrangi-native-left:env(safe-area-inset-left);--atrangi-native-right:env(safe-area-inset-right);background:#103a4c}
 html.atrangi-native-shell body:before{content:"";position:fixed;inset:0 0 auto;height:var(--atrangi-native-top);background:linear-gradient(135deg,#103a4c,#164f64);z-index:80;pointer-events:none}
 html.atrangi-native-shell .app-shell{padding-top:var(--atrangi-native-top)}
 html.atrangi-native-shell .topbar{top:var(--atrangi-native-top)}
+html.atrangi-native-shell .topbar{padding-left:max(9px,var(--atrangi-native-left));padding-right:max(9px,var(--atrangi-native-right))}
+html.atrangi-native-shell .mobile-nav{padding-left:var(--atrangi-native-left);padding-right:var(--atrangi-native-right)}
 html.atrangi-native-shell .desktop-nav{top:calc(68px + var(--atrangi-native-top))}
-@media(max-width:720px){html.atrangi-native-shell .desktop-nav{top:auto}}
+@media(max-width:820px){
+ html.atrangi-native-shell .passport-simple-dialog .ps-card{height:100dvh;padding-top:var(--atrangi-native-top);padding-bottom:env(safe-area-inset-bottom)}
+}
+@media(max-width:720px){
+ html.atrangi-native-shell .desktop-nav{top:auto}
+ html.atrangi-native-shell .modal-card{height:100dvh;max-height:100dvh;padding-top:calc(16px + var(--atrangi-native-top));padding-bottom:calc(16px + var(--safe-bottom))}
+ html.atrangi-native-shell .bottom-sheet{padding-bottom:var(--safe-bottom)}
+ html.atrangi-native-shell .sheet-card{max-height:calc(100dvh - var(--atrangi-native-top) - var(--safe-bottom))}
+ html.atrangi-native-shell .camera-topbar{padding-top:var(--atrangi-native-top)}
+ html.atrangi-native-shell .universal-viewer{height:100dvh;padding-top:var(--atrangi-native-top);padding-bottom:env(safe-area-inset-bottom)}
+}
