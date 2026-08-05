@@ -11,10 +11,18 @@ Website: `https://vaibhavshinde144.github.io/atrangi-document-workspace/`
 ## Current release
 
 - Hosted workspace: `7.2.1`
-- Android source/build: `7.2.5` (`versionCode 10`)
+- Android source/build: `7.2.6` (`versionCode 11`)
 - Stable APK: `https://vaibhavshinde144.github.io/atrangi-document-workspace/downloads/Atrangi-Document-Workspace.apk`
 
 Web features hot-update through the hosted workspace. Native Android features such as launcher resources, camera/share bridges and external **Open with Atrangi** handling require installing the latest APK.
+
+## v7.2.6 mobile scan and export reliability
+
+- Removes duplicate native/WebView status-bar and navigation-bar insets, while retaining notch and gesture-navigation protection.
+- Groups ID front and back inside one visible output-sheet preview and reports source-photo and output-page counts separately.
+- Exports paired ID sides together on A4 using Fit mode and a safe 6 mm margin by default.
+- Streams locally generated PDF, image and Word exports through a bounded native bridge into `Downloads/Atrangi`; Android 7–9 use the system Save As picker.
+- Expands automated coverage to 62 browser scenarios, including camera/gallery processing modes, paired-ID composition, chunked export, phone, tablet and desktop layouts.
 
 ## v7.2.5 native PDF controls
 
@@ -62,8 +70,8 @@ Web features hot-update through the hosted workspace. Native Android features su
 ## Android
 
 - Package: `com.atrangi.documentworkspace`
-- Native version: `7.2.5`
-- Version code: `9`
+- Native version: `7.2.6`
+- Version code: `11`
 - Hosted workspace loaded by the wrapper: `7.2.1`
 - Minimum Android: 7.0 (API 24)
 
@@ -91,7 +99,7 @@ Open the repository in Android Studio, sync Gradle, then use **Build → Build A
 
 - `node scripts/verify-web-package.mjs` validates versioned release assets, the exact logo hash, native bridge contracts, external document intent contracts and offline package.
 - `python scripts/runtime-diagnostics.py` validates the deployable bootstrap package.
-- `python scripts/browser-acceptance.py <url>` runs the scanner, navigation, sharing, passport and responsive browser scenarios.
+- `python scripts/browser-acceptance.py <url>` runs scanner/gallery modes, paired-ID output, native export transfer, navigation, sharing, passport and responsive browser scenarios.
 - `.github/workflows/pages.yml` runs web/browser/Android validation, publishes the stable APK and deploys GitHub Pages.
 
 ## Privacy architecture

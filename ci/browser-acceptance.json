@@ -44,7 +44,7 @@
     {
       "name": "runtime has no loader/bootstrap text",
       "ok": true,
-      "detail": "\u2630\nAtrangi Document Workspace\n\ud83c\udf19\n\u22ee\nATRANGI DOCUMENT WORKSPACE v7.2.1\nALL-IN-ONE\nScan, create, view, edit and manage documents in one app.\n\nOne workspace for document scanning, passport photos, PDF tools, Word/Excel/text files, OCR, annotations, version history, conversion, signatures, security and universal file viewing.\n\n\ud83d\udcf7 Scan document\n\ud83d\udcc1 Import any file\n\u2317 Open Files Workspace\n\ud83d\udcf7 Scan\n\ud83e\udeaa Passport & ID\n\ud83d\udcc2 View & Edit\n\ud83d\udd01 Convert\n\u270d Annotate & Sign\n\ud83d\udd12 Secure\nQUICK START\nWhat do you want to do?\nAll tools \u203a"
+      "detail": "\u2630\nAtrangi Document Workspace\n\ud83c\udf19\n\u2315\n\u22ee\nATRANGI DOCUMENT WORKSPACE v7.2.1\nALL-IN-ONE\nScan, create, view, edit and manage documents in one app.\n\nOne workspace for document scanning, passport photos, PDF tools, Word/Excel/text files, OCR, annotations, version history, conversion, signatures, security and universal file viewing.\n\n\ud83d\udcf7 Scan document\n\ud83d\udcc1 Import any file\n\u2317 Open Files Workspace\n\ud83d\udcf7 Scan\nDocs \u2022 IDs \u2022 Books \u2022 Receipts\n\ud83e\udeaa Passport & ID\nCompliance \u2022 Background \u2022 Appearance\n\ud83d\udcc2 View & Edit\nPDF \u2022 Word \u2022 Ex"
     },
     {
       "name": "startup implementation is not inline in rendered workspace",
@@ -262,24 +262,59 @@
       "detail": ""
     },
     {
+      "name": "ID gallery import groups front and back into one visible output page",
+      "ok": true,
+      "detail": "{\"arrangement\": \"builder-pair-sides vertical\", \"hint\": \"Front and back are grouped inside each output sheet below. Edit either side, then complete and export.\", \"pages\": 2, \"sheets\": 1, \"sides\": 2, \"summary\": \"\\ud83e\\udeaa ID Card\\n2 source photos\\n1 output page\\nQuality 64/100\\n2-side \\u2022 same output page\"}"
+    },
+    {
+      "name": "paired ID compositor produces one portrait sheet with two slots",
+      "ok": true,
+      "detail": "{\"bottom\": [202, 159, 128, 255], \"h\": 1754, \"top\": [255, 255, 255, 255], \"w\": 1240}"
+    },
+    {
+      "name": "paired ID export defaults preserve both sides on A4",
+      "ok": true,
+      "detail": "{\"layout\": \"fit\", \"margin\": \"6\", \"orientation\": \"portrait\", \"page\": \"a4\", \"tip\": \"Front + back will be placed on the same output page. Fit mode and a 6 mm safe margin preserve both complete ID sides.\"}"
+    },
+    {
+      "name": "offline Android export bridge transfers complete files in bounded chunks",
+      "ok": true,
+      "detail": "{\"chunks\": [262144, 262144, 175712], \"meta\": {\"finished\": \"native-test\", \"mime\": \"application/pdf\", \"name\": \"Paired_ID.pdf\", \"size\": 700000}, \"ok\": true, \"total\": 700000}"
+    },
+    {
+      "name": "photo/gallery scan processing works for document, ID, book and receipt modes",
+      "ok": true,
+      "detail": "{\"book\": {\"height\": 480, \"quality\": 62, \"src\": true, \"width\": 640}, \"document\": {\"height\": 480, \"quality\": 62, \"src\": true, \"width\": 640}, \"idCard\": {\"height\": 480, \"quality\": 62, \"src\": true, \"width\": 640}, \"receipt\": {\"height\": 480, \"quality\": 62, \"src\": true, \"width\": 640}}"
+    },
+    {
+      "name": "scan/export workflow has no severe JavaScript console errors",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "native Android shell applies each system safe area exactly once",
+      "ok": true,
+      "detail": "{\"shell\": {\"main\": {\"bottom\": 2139.6875, \"height\": 2057.6875, \"left\": 12, \"right\": 485, \"top\": 82}, \"native\": true, \"nav\": {\"bottom\": 690, \"height\": 76, \"left\": 0, \"right\": 497, \"top\": 614}, \"scrollWidth\": 497, \"topbar\": {\"bottom\": 82, \"height\": 56, \"left\": 0, \"right\": 497, \"top\": 26}, \"viewport\": {\"h\": 690, \"w\": 512}}, \"scanSheet\": {\"bottom\": 678, \"maxHeight\": \"652px\", \"paddingBottom\": \"12px\", \"top\": 26}}"
+    },
+    {
       "name": "responsive small-mobile",
       "ok": true,
-      "detail": "{\"shell\": {\"header\": {\"bottom\": 56, \"height\": 56, \"left\": 0, \"right\": 345, \"toJSON\": {}, \"top\": 0, \"width\": 345, \"x\": 0, \"y\": 0}, \"innerWidth\": 360, \"logo\": true, \"scrollWidth\": 345, \"shareExists\": true, \"theme\": true}, \"passport\": {\"bodyClient\": 345, \"bodyScroll\": 345, \"cardClient\": 360, \"cardScroll\": 360, \"left\": 0, \"open\": true, \"right\": 360, \"viewport\": 360}}"
+      "detail": "{\"shell\": {\"header\": {\"bottom\": 56, \"height\": 56, \"left\": 0, \"right\": 497, \"toJSON\": {}, \"top\": 0, \"width\": 497, \"x\": 0, \"y\": 0}, \"innerWidth\": 512, \"logo\": true, \"scrollWidth\": 497, \"shareExists\": true, \"theme\": true}, \"passport\": {\"bodyClient\": 497, \"bodyScroll\": 497, \"cardClient\": 512, \"cardScroll\": 512, \"left\": 0, \"open\": true, \"right\": 512, \"viewport\": 512}}"
     },
     {
       "name": "responsive mobile",
       "ok": true,
-      "detail": "{\"shell\": {\"header\": {\"bottom\": 56, \"height\": 56, \"left\": 0, \"right\": 375, \"toJSON\": {}, \"top\": 0, \"width\": 375, \"x\": 0, \"y\": 0}, \"innerWidth\": 390, \"logo\": true, \"scrollWidth\": 375, \"shareExists\": true, \"theme\": true}, \"passport\": {\"bodyClient\": 375, \"bodyScroll\": 375, \"cardClient\": 390, \"cardScroll\": 390, \"left\": 0, \"open\": true, \"right\": 390, \"viewport\": 390}}"
+      "detail": "{\"shell\": {\"header\": {\"bottom\": 56, \"height\": 56, \"left\": 0, \"right\": 497, \"toJSON\": {}, \"top\": 0, \"width\": 497, \"x\": 0, \"y\": 0}, \"innerWidth\": 512, \"logo\": true, \"scrollWidth\": 497, \"shareExists\": true, \"theme\": true}, \"passport\": {\"bodyClient\": 497, \"bodyScroll\": 497, \"cardClient\": 512, \"cardScroll\": 512, \"left\": 0, \"open\": true, \"right\": 512, \"viewport\": 512}}"
     },
     {
       "name": "responsive tablet",
       "ok": true,
-      "detail": "{\"shell\": {\"header\": {\"bottom\": 68, \"height\": 68, \"left\": 0, \"right\": 753, \"toJSON\": {}, \"top\": 0, \"width\": 753, \"x\": 0, \"y\": 0}, \"innerWidth\": 768, \"logo\": true, \"scrollWidth\": 753, \"shareExists\": true, \"theme\": true}, \"passport\": {\"bodyClient\": 768, \"bodyScroll\": 768, \"cardClient\": 768, \"cardScroll\": 768, \"left\": 0, \"open\": true, \"right\": 768, \"viewport\": 768}}"
+      "detail": "{\"shell\": {\"header\": {\"bottom\": 68, \"height\": 68, \"left\": 0, \"right\": 731, \"toJSON\": {}, \"top\": 0, \"width\": 731, \"x\": 0, \"y\": 0}, \"innerWidth\": 746, \"logo\": true, \"scrollWidth\": 731, \"shareExists\": true, \"theme\": true}, \"passport\": {\"bodyClient\": 731, \"bodyScroll\": 731, \"cardClient\": 746, \"cardScroll\": 746, \"left\": 0, \"open\": true, \"right\": 746, \"viewport\": 746}}"
     },
     {
       "name": "responsive desktop",
       "ok": true,
-      "detail": "{\"shell\": {\"header\": {\"bottom\": 68, \"height\": 68, \"left\": 0, \"right\": 1425, \"toJSON\": {}, \"top\": 0, \"width\": 1425, \"x\": 0, \"y\": 0}, \"innerWidth\": 1440, \"logo\": true, \"scrollWidth\": 1425, \"shareExists\": true, \"theme\": true}, \"passport\": {\"bodyClient\": 1103, \"bodyScroll\": 1103, \"cardClient\": 1118, \"cardScroll\": 1118, \"left\": 152.5, \"open\": true, \"right\": 1272.5, \"viewport\": 1440}}"
+      "detail": "{\"shell\": {\"header\": {\"bottom\": 68, \"height\": 68, \"left\": 0, \"right\": 1403, \"toJSON\": {}, \"top\": 0, \"width\": 1403, \"x\": 0, \"y\": 0}, \"innerWidth\": 1418, \"logo\": true, \"scrollWidth\": 1403, \"shareExists\": true, \"theme\": true}, \"passport\": {\"bodyClient\": 1103, \"bodyScroll\": 1103, \"cardClient\": 1118, \"cardScroll\": 1118, \"left\": 141.5, \"open\": true, \"right\": 1261.5, \"viewport\": 1418}}"
     }
   ],
   "failureCount": 0,

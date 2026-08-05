@@ -1,9 +1,9 @@
 {
   "webVersion": "7.2.1",
-  "nativeVersionCode": 10,
-  "nativeVersionName": "7.2.5",
+  "nativeVersionCode": 11,
+  "nativeVersionName": "7.2.6",
   "mandatory": false,
-  "title": "Atrangi Document Workspace v7.2.5",
-  "notes": "Adds pinch and button zoom from 75% to 300%, embedded-text search with highlighted results on Android 15+, and automatic offline workspace search on older Android versions. Edit, add password, remove password and sign actions now transfer the already-open external PDF directly into the correct Atrangi tool without selecting the file again.",
+  "title": "Atrangi Document Workspace v7.2.6",
+  "notes": "Removes duplicate Android safe-area spacing so the workspace meets the status and navigation bars cleanly. Two-sided ID scans now show and export front plus back on one A4 page with safe Fit defaults. Generated PDFs, images and Word files stream through a new offline native export bridge into Downloads/Atrangi instead of failing on blob URLs.",
   "apkUrl": "https://vaibhavshinde144.github.io/atrangi-document-workspace/downloads/Atrangi-Document-Workspace.apk"
 }

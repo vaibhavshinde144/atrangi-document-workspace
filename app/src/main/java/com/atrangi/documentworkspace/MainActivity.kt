@@ -2,6 +2,7 @@ package com.atrangi.documentworkspace
 
 import android.Manifest
 import android.app.DownloadManager
+import android.content.ContentValues
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -44,7 +45,10 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import org.json.JSONObject
 import java.io.File
+import java.io.FileOutputStream
 import java.io.RandomAccessFile
+import java.util.ArrayDeque
+import java.util.concurrent.ConcurrentHashMap
 import java.util.UUID
 
 class MainActivity : AppCompatActivity() {
@@ -52,6 +56,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var rootView: FrameLayout
     private lateinit var appContentView: FrameLayout
     private lateinit var statusBarScrim: View
+    private lateinit var navigationBarScrim: View
     private lateinit var splashView: View
     private var contentIsVisible = false
     private var webContentReady = false
@@ -62,6 +67,9 @@ class MainActivity : AppCompatActivity() {
     private var pendingCameraUri: Uri? = null
     private var pendingAppliedWebVersion: String? = null
     @Volatile private var pendingExternalDocument: ExternalDocument? = null
+    private val nativeExports = ConcurrentHashMap<String, NativeExport>()
+    private val exportPickerQueue = ArrayDeque<NativeExport>()
+    private var pendingExportDestination: NativeExport? = null
 
     private data class ExternalDocument(
         val id: String,
@@ -69,6 +77,15 @@ class MainActivity : AppCompatActivity() {
         val displayName: String,
         val mimeType: String,
         val workspaceAction: String? = null
+    )
+
+    private data class NativeExport(
+        val id: String,
+        val cacheFile: File,
+        val displayName: String,
+        val mimeType: String,
+        val expectedSize: Long,
+        var bytesWritten: Long = 0L
     )
 
     private val filePicker = registerForActivityResult(
@@ -110,6 +127,41 @@ class MainActivity : AppCompatActivity() {
     private val notificationPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { }
+
+    private val exportDestinationPicker = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val export = pendingExportDestination
+        if (export == null) {
+            launchNextExportDestination()
+            return@registerForActivityResult
+        }
+        val destination = result.data?.data
+        if (result.resultCode != RESULT_OK || destination == null) {
+            export.cacheFile.delete()
+            pendingExportDestination = null
+            Toast.makeText(this, "Export cancelled", Toast.LENGTH_SHORT).show()
+            launchNextExportDestination()
+            return@registerForActivityResult
+        }
+        Thread {
+            val resultMessage = try {
+                contentResolver.openOutputStream(destination, "w")?.use { output ->
+                    export.cacheFile.inputStream().use { input -> input.copyTo(output) }
+                } ?: throw IllegalStateException("The selected destination is not writable.")
+                "Saved ${export.displayName}"
+            } catch (error: Exception) {
+                "Unable to save ${export.displayName}: ${error.message ?: "Unknown error"}"
+            } finally {
+                export.cacheFile.delete()
+            }
+            runOnUiThread {
+                pendingExportDestination = null
+                Toast.makeText(this, resultMessage, Toast.LENGTH_LONG).show()
+                launchNextExportDestination()
+            }
+        }.start()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -160,6 +212,11 @@ class MainActivity : AppCompatActivity() {
         rootView.addView(
             statusBarScrim,
             FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, Gravity.TOP)
+        )
+        navigationBarScrim = View(this).apply { setBackgroundColor(Color.WHITE) }
+        rootView.addView(
+            navigationBarScrim,
+            FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, Gravity.BOTTOM)
         )
         setContentView(rootView)
         applySystemBarInsets()
@@ -301,7 +358,16 @@ class MainActivity : AppCompatActivity() {
 
         webView.setDownloadListener(DownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
             try {
-                val request = DownloadManager.Request(Uri.parse(url))
+                val uri = Uri.parse(url)
+                if (uri.scheme !in setOf("http", "https")) {
+                    Toast.makeText(
+                        this,
+                        "This local export could not be prepared. Please retry the export.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    return@DownloadListener
+                }
+                val request = DownloadManager.Request(uri)
                     .setMimeType(mimeType)
                     .addRequestHeader("User-Agent", userAgent)
                     .setTitle(android.webkit.URLUtil.guessFileName(url, contentDisposition, mimeType))
@@ -324,16 +390,22 @@ class MainActivity : AppCompatActivity() {
                 WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.displayCutout()
             )
             val navigationInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+            // The web shell owns safe-area spacing via env(safe-area-inset-*). Keep the
+            // WebView edge-to-edge so system insets are applied exactly once.
             val contentParams = appContentView.layoutParams as FrameLayout.LayoutParams
-            contentParams.leftMargin = maxOf(statusInsets.left, navigationInsets.left)
-            contentParams.topMargin = statusInsets.top
-            contentParams.rightMargin = maxOf(statusInsets.right, navigationInsets.right)
-            contentParams.bottomMargin = navigationInsets.bottom
+            contentParams.leftMargin = 0
+            contentParams.topMargin = 0
+            contentParams.rightMargin = 0
+            contentParams.bottomMargin = 0
             appContentView.layoutParams = contentParams
 
             val scrimParams = statusBarScrim.layoutParams as FrameLayout.LayoutParams
             scrimParams.height = statusInsets.top
             statusBarScrim.layoutParams = scrimParams
+
+            val navigationScrimParams = navigationBarScrim.layoutParams as FrameLayout.LayoutParams
+            navigationScrimParams.height = navigationInsets.bottom
+            navigationBarScrim.layoutParams = navigationScrimParams
             insets
         }
         ViewCompat.requestApplyInsets(rootView)
@@ -408,6 +480,87 @@ class MainActivity : AppCompatActivity() {
         }
 
         @JavascriptInterface
+        fun beginFileExport(fileName: String, mimeType: String, expectedSize: Long): String {
+            if (expectedSize < 0L || expectedSize > MAX_NATIVE_EXPORT_BYTES) {
+                runOnUiThread {
+                    Toast.makeText(
+                        this@MainActivity,
+                        "This export is too large. Maximum size is ${MAX_NATIVE_EXPORT_BYTES / 1_000_000} MB.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+                return ""
+            }
+            return try {
+                val safeName = fileName
+                    .replace(Regex("[^A-Za-z0-9._ ()-]"), "_")
+                    .trim()
+                    .take(160)
+                    .ifBlank { "Atrangi-Export" }
+                val safeMime = mimeType
+                    .replace(Regex("[^A-Za-z0-9.+/-]"), "")
+                    .take(100)
+                    .ifBlank { "application/octet-stream" }
+                val id = UUID.randomUUID().toString()
+                val exportDir = File(cacheDir, "native-exports").apply { mkdirs() }
+                val cacheFile = File.createTempFile("atrangi-export-", ".part", exportDir)
+                nativeExports[id] = NativeExport(id, cacheFile, safeName, safeMime, expectedSize)
+                id
+            } catch (error: Exception) {
+                runOnUiThread {
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Unable to start export: ${error.message ?: "Unknown error"}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+                ""
+            }
+        }
+
+        @JavascriptInterface
+        fun appendFileExportChunk(exportId: String, base64Chunk: String): Boolean {
+            val export = nativeExports[exportId] ?: return false
+            if (base64Chunk.length > MAX_NATIVE_EXPORT_CHUNK_BASE64_CHARS) return false
+            return try {
+                val bytes = Base64.decode(base64Chunk, Base64.NO_WRAP)
+                synchronized(export) {
+                    if (export.bytesWritten + bytes.size > MAX_NATIVE_EXPORT_BYTES) return false
+                    FileOutputStream(export.cacheFile, true).use { output -> output.write(bytes) }
+                    export.bytesWritten += bytes.size
+                }
+                true
+            } catch (_: Exception) {
+                false
+            }
+        }
+
+        @JavascriptInterface
+        fun finishFileExport(exportId: String): Boolean {
+            val export = nativeExports.remove(exportId) ?: return false
+            synchronized(export) {
+                if (export.bytesWritten != export.expectedSize || export.cacheFile.length() != export.expectedSize) {
+                    export.cacheFile.delete()
+                    runOnUiThread {
+                        Toast.makeText(
+                            this@MainActivity,
+                            "Export was incomplete. Please retry.",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                    return false
+                }
+            }
+            saveNativeExport(export)
+            return true
+        }
+
+        @JavascriptInterface
+        fun cancelFileExport(exportId: String) {
+            nativeExports.remove(exportId)?.cacheFile?.delete()
+        }
+
+        @JavascriptInterface
         fun contentReady() {
             runOnUiThread {
                 webContentReady = true
@@ -473,6 +626,76 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun installUrl(): String = INSTALL_URL
+    }
+
+    private fun saveNativeExport(export: NativeExport) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            enqueueExportDestination(export)
+            return
+        }
+        Thread {
+            var destination: Uri? = null
+            try {
+                val values = ContentValues().apply {
+                    put(MediaStore.Downloads.DISPLAY_NAME, export.displayName)
+                    put(MediaStore.Downloads.MIME_TYPE, export.mimeType)
+                    put(MediaStore.Downloads.RELATIVE_PATH, "${Environment.DIRECTORY_DOWNLOADS}/Atrangi")
+                    put(MediaStore.Downloads.IS_PENDING, 1)
+                }
+                destination = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                    ?: throw IllegalStateException("Android did not provide a Downloads destination.")
+                contentResolver.openOutputStream(destination, "w")?.use { output ->
+                    export.cacheFile.inputStream().use { input -> input.copyTo(output) }
+                } ?: throw IllegalStateException("Downloads is not writable.")
+                contentResolver.update(
+                    destination,
+                    ContentValues().apply { put(MediaStore.Downloads.IS_PENDING, 0) },
+                    null,
+                    null
+                )
+                export.cacheFile.delete()
+                runOnUiThread {
+                    Toast.makeText(
+                        this,
+                        "Saved ${export.displayName} to Downloads/Atrangi",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            } catch (_: Exception) {
+                destination?.let { runCatching { contentResolver.delete(it, null, null) } }
+                enqueueExportDestination(export)
+            }
+        }.start()
+    }
+
+    private fun enqueueExportDestination(export: NativeExport) {
+        runOnUiThread {
+            exportPickerQueue.addLast(export)
+            launchNextExportDestination()
+        }
+    }
+
+    private fun launchNextExportDestination() {
+        if (pendingExportDestination != null || exportPickerQueue.isEmpty()) return
+        val export = exportPickerQueue.removeFirst()
+        pendingExportDestination = export
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = export.mimeType
+            putExtra(Intent.EXTRA_TITLE, export.displayName)
+        }
+        try {
+            exportDestinationPicker.launch(intent)
+        } catch (error: Exception) {
+            pendingExportDestination = null
+            export.cacheFile.delete()
+            Toast.makeText(
+                this,
+                "Unable to choose an export destination: ${error.message ?: "Unknown error"}",
+                Toast.LENGTH_LONG
+            ).show()
+            launchNextExportDestination()
+        }
     }
 
     private fun shareInstallLink() {
@@ -730,6 +953,12 @@ class MainActivity : AppCompatActivity() {
         pendingCameraUri = null
         pendingExternalDocument?.cacheFile?.delete()
         pendingExternalDocument = null
+        nativeExports.values.forEach { it.cacheFile.delete() }
+        nativeExports.clear()
+        pendingExportDestination?.cacheFile?.delete()
+        pendingExportDestination = null
+        exportPickerQueue.forEach { it.cacheFile.delete() }
+        exportPickerQueue.clear()
         if (::webView.isInitialized) {
             webView.removeJavascriptInterface("AtrangiNative")
             webView.destroy()
@@ -743,6 +972,8 @@ class MainActivity : AppCompatActivity() {
         private const val INSTALL_URL = "https://vaibhavshinde144.github.io/atrangi-document-workspace/downloads/Atrangi-Document-Workspace.apk"
         private const val CONTENT_READY_FALLBACK_MS = 1600L
         private const val MAX_SHARE_BASE64_CHARS = 32_000_000
+        private const val MAX_NATIVE_EXPORT_BYTES = 250_000_000L
+        private const val MAX_NATIVE_EXPORT_CHUNK_BASE64_CHARS = 400_000
         private const val EXTERNAL_CHUNK_BYTES = 256 * 1024
         private const val EXTRA_OPEN_IN_WORKSPACE = "atrangi.pdf.OPEN_IN_WORKSPACE"
         private const val EXTRA_WORKSPACE_ACTION = "atrangi.pdf.WORKSPACE_ACTION"

@@ -6,6 +6,8 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 
+if hasattr(sys.stdout,'reconfigure'):sys.stdout.reconfigure(encoding='utf-8',errors='replace')
+
 URL=sys.argv[1] if len(sys.argv)>1 else 'http://127.0.0.1:8123/'
 OUT=Path(os.environ.get('ATRANGI_TEST_REPORT','ci/browser-acceptance.json'));OUT.parent.mkdir(parents=True,exist_ok=True)
 INSTALL_URL='https://vaibhavshinde144.github.io/atrangi-document-workspace/downloads/Atrangi-Document-Workspace.apk'
@@ -207,6 +209,87 @@ def passport_suite():
     except Exception as e:record('passport workflow suite completed',False,repr(e))
     finally:d.quit()
 
+def scan_export_suite():
+    d=driver(390,844)
+    try:
+        d.get(URL+('&' if '?' in URL else '?')+'acceptance=scan-export')
+        wait(d,"document.getElementById('builderPages')")
+        d.set_script_timeout(45)
+        imported=d.execute_async_script("""
+          const done=arguments[0],app=window.AtrangiScannerApp;
+          (async()=>{
+            const make=async(label,color)=>{
+              const c=document.createElement('canvas');c.width=760;c.height=480;
+              const x=c.getContext('2d');x.fillStyle='#e5e7e8';x.fillRect(0,0,c.width,c.height);
+              x.fillStyle=color;x.fillRect(105,95,550,290);x.fillStyle='#fff';x.font='bold 54px Arial';x.fillText(label,260,250);
+              const blob=await new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(new Error('encode failed')),'image/jpeg',.94));
+              return new File([blob],label+'.jpg',{type:'image/jpeg'});
+            };
+            document.getElementById('autoReviewSetting').checked=false;
+            app.state.builder=null;app.state.selectedProfile='idCard';
+            app.state.scanOptions={idSides:2,idLayout:'onePage',idArrangement:'vertical',autoOcr:false,name:'Paired_ID'};
+            const files=[await make('FRONT','#167da4'),await make('BACK','#8c552d')];
+            const added=await app.addScannedFiles(files,{source:'gallery'});
+            app.renderBuilder();
+            done({added,pages:app.state.builder?.pages?.length||0});
+          })().catch(error=>done({error:String(error)}));
+        """)
+        if imported.get('error'):raise RuntimeError(imported['error'])
+        paired=d.execute_script("""const app=window.AtrangiScannerApp,b=app.state.builder,s=document.querySelector('.builder-id-sheet'),pair=s?.querySelector('.builder-pair-sides');return {pages:b?.pages?.length||0,sheets:document.querySelectorAll('.builder-id-sheet').length,sides:pair?.querySelectorAll('.builder-page').length||0,summary:document.getElementById('builderSummary')?.innerText||'',hint:document.getElementById('builderReviewHint')?.innerText||'',arrangement:pair?.className||''}""")
+        paired_ok=paired['pages']==2 and paired['sheets']==1 and paired['sides']==2 and '1 output page' in paired['summary'] and '2 source photos' in paired['summary'] and 'vertical' in paired['arrangement']
+        record('ID gallery import groups front and back into one visible output page',paired_ok,json.dumps(paired))
+
+        sheet=d.execute_async_script("""
+          const done=arguments[0],app=window.AtrangiScannerApp,b=app.state.builder;
+          app.composeScanSheet(b.pages,{page:'a4',dpi:150,quality:'high',orientation:'portrait',layout:'fit',marginMm:6,gapMm:3,alignX:'center',alignY:'center',background:'#fff',arrangement:'vertical'},true)
+            .then(c=>{const x=c.getContext('2d'),top=x.getImageData(Math.floor(c.width/2),Math.floor(c.height*.25),1,1).data,bottom=x.getImageData(Math.floor(c.width/2),Math.floor(c.height*.75),1,1).data;done({w:c.width,h:c.height,top:[...top],bottom:[...bottom]})})
+            .catch(error=>done({error:String(error)}));
+        """)
+        if sheet.get('error'):raise RuntimeError(sheet['error'])
+        record('paired ID compositor produces one portrait sheet with two slots',sheet['w']>800 and sheet['h']>sheet['w'] and sheet['top']!=sheet['bottom'],json.dumps(sheet))
+
+        defaults=d.execute_script("""window.AtrangiScannerApp.openTool('scanExport',window.AtrangiScannerApp.state.builder);const value=id=>document.getElementById(id)?.value||'',text=id=>document.getElementById(id)?.innerText||'';return {page:value('scanExportPage'),orientation:value('scanExportOrientation'),layout:value('scanExportLayout'),margin:value('scanExportMargin'),tip:text('scanExportTip')}""")
+        record('paired ID export defaults preserve both sides on A4',defaults['page']=='a4' and defaults['orientation']=='portrait' and defaults['layout']=='fit' and defaults['margin']=='6' and 'same output page' in defaults['tip'],json.dumps(defaults))
+        d.execute_script("document.getElementById('toolDialog')?.close()")
+
+        native=d.execute_async_script("""
+          const done=arguments[0],chunks=[],meta={};
+          window.AtrangiNative={
+            beginFileExport:(name,mime,size)=>{Object.assign(meta,{name,mime,size});return 'native-test'},
+            appendFileExportChunk:(id,data)=>{chunks.push(atob(data).length);return id==='native-test'},
+            finishFileExport:id=>{meta.finished=id;return true},cancelFileExport:id=>{meta.cancelled=id}
+          };
+          const bytes=new Uint8Array(700000);for(let i=0;i<bytes.length;i++)bytes[i]=i%251;
+          window.AtrangiTools.download(new Blob([bytes],{type:'application/pdf'}),'Paired_ID.pdf')
+            .then(ok=>done({ok,meta,chunks,total:chunks.reduce((a,b)=>a+b,0)}))
+            .catch(error=>done({error:String(error),meta,chunks}));
+        """)
+        native_ok=not native.get('error') and native['ok'] and native['meta']['name']=='Paired_ID.pdf' and native['meta']['mime']=='application/pdf' and native['meta']['size']==700000 and native['meta']['finished']=='native-test' and native['total']==700000 and len(native['chunks'])==3
+        record('offline Android export bridge transfers complete files in bounded chunks',native_ok,json.dumps(native))
+
+        profiles=d.execute_async_script("""
+          const done=arguments[0],app=window.AtrangiScannerApp;
+          (async()=>{const c=document.createElement('canvas');c.width=640;c.height=480;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,640,480);x.fillStyle='#111';x.font='bold 42px Arial';x.fillText('ATRANGI SCAN',120,220);const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.92));const f=new File([blob],'scan.jpg',{type:'image/jpeg'}),out={};for(const mode of ['document','idCard','book','receipt']){const p=await app.createScanPage(f,mode);out[mode]={width:p.width,height:p.height,quality:p.quality?.score,src:(p.src||'').startsWith('data:image/')};}done(out)})().catch(error=>done({error:String(error)}));
+        """)
+        profiles_ok=not profiles.get('error') and all(profiles.get(k,{}).get('width',0)>0 and profiles.get(k,{}).get('height',0)>0 and profiles.get(k,{}).get('src') for k in ['document','idCard','book','receipt'])
+        record('photo/gallery scan processing works for document, ID, book and receipt modes',profiles_ok,json.dumps(profiles))
+        errs=severe(d);record('scan/export workflow has no severe JavaScript console errors',len(errs)==0,'\n'.join(errs[:10]))
+    except Exception as e:record('scan/export workflow suite completed',False,repr(e))
+    finally:d.quit()
+
+def native_safe_area_suite():
+    d=driver(390,844)
+    try:
+        d.get(URL+('&' if '?' in URL else '?')+'app=7.2.1&acceptance=native-safe-area')
+        wait(d,"document.getElementById('app')")
+        shell=d.execute_script("""const rect=e=>{const r=e.getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right,height:r.height}};return {viewport:{w:innerWidth,h:innerHeight},topbar:rect(document.querySelector('.topbar')),main:rect(document.querySelector('.main-content')),nav:rect(document.querySelector('.mobile-nav')),native:document.documentElement.classList.contains('atrangi-native-shell'),scrollWidth:document.documentElement.scrollWidth}""")
+        click(d,'#heroScanBtn');WebDriverWait(d,5).until(lambda x:not x.execute_script("return document.getElementById('scanStartSheet').hidden"))
+        sheet=d.execute_script("""const s=document.getElementById('scanStartSheet'),c=s.querySelector('.sheet-card'),r=c.getBoundingClientRect();return {top:r.top,bottom:r.bottom,maxHeight:getComputedStyle(c).maxHeight,paddingBottom:getComputedStyle(s).paddingBottom}""")
+        aligned=shell['native'] and shell['topbar']['top']>=26 and abs(shell['main']['top']-shell['topbar']['bottom'])<=1 and abs(shell['nav']['bottom']-shell['viewport']['h'])<=1 and shell['scrollWidth']<=shell['viewport']['w']+2 and sheet['top']>=shell['topbar']['top'] and sheet['bottom']<=shell['viewport']['h']
+        record('native Android shell applies each system safe area exactly once',aligned,json.dumps({'shell':shell,'scanSheet':sheet}))
+    except Exception as e:record('native safe-area suite completed',False,repr(e))
+    finally:d.quit()
+
 def responsive_suite():
     for w,h,label in [(360,800,'small-mobile'),(390,844,'mobile'),(768,1024,'tablet'),(1440,900,'desktop')]:
         d=driver(w,h)
@@ -222,7 +305,7 @@ def responsive_suite():
         except Exception as e:record(f'responsive {label}',False,repr(e))
         finally:d.quit()
 
-core_selftest_suite();runtime_suite();passport_suite();responsive_suite()
+core_selftest_suite();runtime_suite();passport_suite();scan_export_suite();native_safe_area_suite();responsive_suite()
 OUT.write_text(json.dumps({'url':URL,'checks':checks,'failureCount':len(failures),'failures':failures},indent=2)+'\n',encoding='utf-8')
 print(f'Acceptance checks: {len(checks)}, failures: {len(failures)}')
 if failures:raise SystemExit(1)
